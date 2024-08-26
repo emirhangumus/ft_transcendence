@@ -1,0 +1,72 @@
+services:
+  pgbackend:
+    container_name: pgbackend
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+       - ./data/pgbackend:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - app
+    restart: unless-stopped
+  
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+       - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - app
+    restart: unless-stopped
+
+  backend:
+    container_name: backend
+    build: ./src/backend
+    volumes:
+      - ./data/backend:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    networks:
+      - app
+    depends_on:
+      - pgbackend
+
+  nginx:
+    container_name: nginx
+    build: ./src/nginx
+    volumes:
+      - ./data/nginx/static_volume:/home/app/web/staticfiles
+      - ./data/nginx/media_volume:/home/app/web/mediafiles
+    ports:
+      - 8080:80
+    depends_on:
+      - backend
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
+
+volumes:
+#   pgbackend:
+#     - driver: local
+#     - driver_opts:
+#         type: none
+#         device: /data/postgres
+#         o: bind
+  pgadmin:
+#   static_volume:
+#   media_volume:

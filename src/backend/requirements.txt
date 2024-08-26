@@ -1,0 +1,4 @@
+Django==5.1
+psycopg2>=2.8.4
+djangorestframework
+djangorestframework-simplejwt==5.3.1
