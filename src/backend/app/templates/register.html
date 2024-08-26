@@ -1,65 +1,96 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<form id="register-form">
+<form id="register-form" class="max-w-md mx-auto border rounded p-4 shadow-md my-10 flex flex-col gap-8">
     {% csrf_token %}
-    <h1>Create Account</h1>
-    <label for="first_name">Name</label>
-    <input type="text" id="first_name" name="name" required>
-    <label for="last_name">Surname</label>
-    <input type="text" id="last_name" name="surname" required>
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" required>
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" required>
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" required>
-    <label for="confirmPassword">Confirm Password</label>
-    <input type="password" id="confirmPassword" name="confirmPassword" required>
-    <button type="submit">Register</button>
+    <h1 class="text-2xl font-semibold text-gray-800">
+        Create Account
+    </h1>
+    <div class="flex flex-col gap-4">
+        <div class="flex gap-4">
+            <div class="flex-1">
+                <label for="first_name" class="text-sm">
+                    Name
+                </label>
+                <input type="text" id="first_name" name="name" required
+                    class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+            <div class="flex-1">
+                <label for="last_name" class="text-sm">
+                    Surname
+                </label>
+                <input type="text" id="last_name" name="surname" required
+                    class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+        </div>
+        <label for="username" class="text-sm">
+            Username
+        </label>
+        <input type="text" id="username" name="username" required
+            class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+        <label for="email" class="text-sm">
+            Email
+        </label>
+        <input type="email" id="email" name="email" required
+            class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+        <label for="password" class="text-sm">
+            Password
+        </label>
+        <input type="password" id="password" name="password" required
+            class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+        <label for="confirmPassword" class="text-sm">
+            Confirm Password
+        </label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required
+            class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+    </div>
+    <button type="submit"
+        class="bg-blue-600 text-white py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition-all ease-in-out duration-300">
+        Register
+    </button>
 </form>
 
 <script>
-{
-    const form = document.getElementById('register-form');
-    if (form) {
-        form.addEventListener('submit', async function onRegisterSubmit(event) {
-            // Prevent the form from submitting
-            event.preventDefault();
-            const first_name = document.getElementById('first_name').value;
-            const last_name = document.getElementById('last_name').value;
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            if (password !== confirmPassword) {
-                alert('Passwords do not match');
-                return;
-            }
-            const response = await fetch('/api/v1/auth/register/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    first_name,
-                    last_name,
-                    username,
-                    email,
-                    password,
-                    confirm_password: confirmPassword
-                })
+    {
+        const form = document.getElementById('register-form');
+        if (form) {
+            form.addEventListener('submit', async function onRegisterSubmit(event) {
+                // Prevent the form from submitting
+                event.preventDefault();
+                const first_name = document.getElementById('first_name').value;
+                const last_name = document.getElementById('last_name').value;
+                const username = document.getElementById('username').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match');
+                    return;
+                }
+                const response = await fetch('/api/v1/auth/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        first_name,
+                        last_name,
+                        username,
+                        email,
+                        password,
+                        confirm_password: confirmPassword
+                    })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.error);
+                } else {
+                    alert('User registered successfully');
+                    setCurrentPath('/login');
+                    // window.location.href = '/login';
+                }
             });
-            const data = await response.json();
-            if (!data.success) {
-                alert(data.error);
-            } else {
-                alert('User registered successfully');
-                setCurrentPath('/login');
-                // window.location.href = '/login';
-            }
-        });
+        }
     }
-}
 </script>
 {% endblock %}
