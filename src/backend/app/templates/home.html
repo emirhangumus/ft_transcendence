@@ -1,18 +1,17 @@
-<div class="c31">
-    <a href="/login">
-        go to login
-    </a>
-    <a href="/register">
-        go to register
-    </a>
-</div>
+{% extends 'base.html' %}
 
-<style>
-    .c31 a {
-        display: block;
-    }
-    .c31 {
-        display: flex;
-        gap: 31px;
-    }
-</style>
+{% block content %}
+<div class="grid grid-cols-1">
+    <div class="border-black rounded grid grid-cols-2">
+        <a href="/login" class="border-black rounded flex justify-center items-center">
+            go to login
+        </a>
+        <a href="/register" class="border-black rounded flex justify-center items-center">
+            go to register
+        </a>
+    </div>
+    <div>
+        {% include 'friends.html' %}
+    </div>
+</div>
+{% endblock %}

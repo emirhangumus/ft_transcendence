@@ -10,6 +10,9 @@ const ROUTES = {
     '/register': {
         endpoint: '/api/v1/auth/register'
     },
+    '/friends': {
+        endpoint: '/api/v1/friend'
+    }
 }
 
 function makeScriptsExecutable() {
@@ -24,11 +27,11 @@ function makeScriptsExecutable() {
     scripts.forEach(script => {
         const newScript = document.createElement('script');
         if (script.src) {
-            newScript.src = script.src;
-            newScript.classList.add('executed-script');
-            newScript.onload = () => {
-                script.parentNode.removeChild(script); // Optional: remove the original script tag
-            };
+            // newScript.src = script.src;
+            // newScript.classList.add('executed-script');
+            // newScript.onload = () => {
+            //     script.parentNode.removeChild(script); // Optional: remove the original script tag
+            // };
         } else {
             newScript.classList.add('executed-script');
             newScript.textContent = script.textContent;
@@ -114,6 +117,11 @@ function setPage()
                     await renewAccessToken();
                     MAX_TRIES--;
                     setPage();
+                    return ;
+                }
+                if (json && json.code && json.code === 'user_not_found') {
+                    deleteAllCookies();
+                    setCurrentPath('/login');
                     return ;
                 }
             } catch (e) {

@@ -1,0 +1,18 @@
+{% if user.is_authenticated %}
+
+<div class="chat-wrapper">
+    <h1>{{ title }}</h1>
+</div>
+
+<style>
+    .chat-wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-wrapper h1 {
+        font-size: 2rem;
+        font-weight: 400;
+    }
+</style>
+
+{% endif %}

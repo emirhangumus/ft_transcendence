@@ -6,6 +6,9 @@ up:
 down:
 	docker compose down
 
+exec:
+	docker exec -it $(name) /bin/bash
+
 logs:
 	docker compose logs $(name) -f
 

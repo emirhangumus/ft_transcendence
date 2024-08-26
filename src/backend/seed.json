@@ -1,0 +1,23 @@
+[
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "first_name": "ClapTrap",
+            "last_name": "Pipe",
+            "username": "chatbot",
+            "email": "chatbot@42ecole.com",
+            "is_staff": false,
+            "is_superuser": false,
+            "password": "emirhan_ve_burak"
+        }
+    },
+    {
+        "model": "app.accounts",
+        "pk": 1,
+        "fields": {
+            "created_at": "2002-2-27",
+            "updated_at": "2002-2-27"
+        }
+    }
+]

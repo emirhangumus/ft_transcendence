@@ -1,5 +1,38 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from .models import Accounts, ChatMessages, ChatRooms, ChatUsers
+import random
+import string
+
+def generateUniqeChatRoomID():
+    chat_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    while ChatRooms.objects.filter(chat_id=chat_id).exists():
+        chat_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    return chat_id
+
+def assignChatbotRoom(userId):
+    BOT_ID = 1
+    chatbot = User.objects.get(id=BOT_ID)
+    chatroom = ChatRooms.objects.create(
+        chat_id=generateUniqeChatRoomID(),
+        name='chat.botRoom',
+        can_leave=False
+    )
+    ChatUsers.objects.create(
+        room=chatroom,
+        user=chatbot
+    )
+    ChatUsers.objects.create(
+        room=chatroom,
+        user=userId
+    )
+    ChatMessages.objects.create(
+        room=chatroom,
+        sender=chatbot,
+        message='Oyuna hoşgelmişsiniz. Ben ClapTrap Pipe.',
+        type='normal'
+    )
+    return chatroom.id
 
 class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=30, required=True)
@@ -22,6 +55,8 @@ class UserSerializer(serializers.ModelSerializer):
             last_name=last_name,
             password=password,
         )
+        account = Accounts.objects.create(id=user)
+        assignChatbotRoom(account.id)
         return user
 
 class LoginSerializer(serializers.Serializer):
@@ -42,3 +77,56 @@ class LoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Invalid credentials 2")
         else:
             raise serializers.ValidationError("Invalid credentials 1")
+        
+class FriendRequestActionsSerializer(serializers.Serializer):
+    action = serializers.CharField(max_length=10, required=True)
+    username = serializers.CharField(max_length=30, required=True)
+    
+    def validate(self, data):
+        action = data.get('action')
+        target = data.get('username')
+        
+        if target:
+            if User.objects.filter(username=target).exists():
+                target = User.objects.get(username=target)
+                if action == 'accept':
+                    if target.friendships_sender_set.filter(receiver=self.context['request'].user, status='pending').exists():
+                        return data
+                    else:
+                        raise serializers.ValidationError("Friend request not found")
+                elif action == 'reject':
+                    if target.friendships_sender_set.filter(receiver=self.context['request'].user, status='pending').exists():
+                        return data
+                    else:
+                        raise serializers.ValidationError("Friend request not found")
+                elif action == 'cancel':
+                    if self.context['request'].user.friendships_sender_set.filter(receiver=target, status='pending').exists():
+                        return data
+                    else:
+                        raise serializers.ValidationError("Friend request not found")
+                else:
+                    raise serializers.ValidationError("Invalid action")
+        else:
+            raise serializers.ValidationError("Invalid target")
+        
+    def update(self, instance, validated_data):
+        action = validated_data['action']
+        target = validated_data['username']
+        user = self.context['request'].user
+        
+        target = User.objects.get(username=target)
+        
+        if action == 'accept':
+            friendship = target.friendships_sender_set.get(receiver=user)
+            friendship.status = 'accepted'
+            friendship.save()
+        elif action == 'reject':
+            # delete the friendship
+            friendship = target.friendships_sender_set.get(receiver=user)
+            friendship.delete()
+        elif action == 'cancel':
+            friendship = user.friendships_sender_set.get(receiver=target)
+            friendship.status = 'rejected'
+            friendship.save()
+        return friendship
+    

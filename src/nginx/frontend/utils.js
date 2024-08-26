@@ -25,3 +25,14 @@ function setCookie(name, value, expr) {
   d.setTime(d.getTime() + expr);
   document.cookie = `${name}=${value};expires=${d.toUTCString()}`;
 }
+
+async function fetchAPI(url, init) {
+  const cookies = parseCookie(document.cookie);
+  const headers = new Headers();
+  headers.append('Content-Type', 'application/json');
+  if (cookies.access_token) {
+    headers.append('Authorization', `Bearer ${cookies.access_token}`);
+  }
+  const response = await fetch(url, { ...init, headers });
+  return response;
+}
