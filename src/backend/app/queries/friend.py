@@ -18,3 +18,9 @@ def getFriendState(user):
         'friendRequests': friendRequests,
         'sentFriendRequests': sentFriendRequests
     }
+    
+def getFriends(user):
+    friends = Friendships.objects.filter(Q(sender=user) | Q(receiver=user), status='accepted').values('sender', 'receiver')
+    friends = [friend['sender'] if friend['receiver'] == user.id else friend['receiver'] for friend in friends]
+    friends = User.objects.filter(id__in=friends)
+    return friends

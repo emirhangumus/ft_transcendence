@@ -1,17 +1,133 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="grid grid-cols-1">
-    <div class="border-black rounded grid grid-cols-2">
-        <a href="/login" class="border-black rounded flex justify-center items-center">
-            go to login
-        </a>
-        <a href="/register" class="border-black rounded flex justify-center items-center">
-            go to register
-        </a>
+<style>
+    .h-\[200px\] {
+        height: 200px;
+    }
+
+    .bendo-card-wrapper {
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .bendo-card-wrapper:hover {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .bendo-card-wrapper img {
+        transform: scale(1);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .bendo-card-wrapper:hover img {
+        transform: scale(1.03);
+    }
+</style>
+<div class="grid grid-cols-9 grid-rows-3 gap-4 mt-16">
+    <a href="/chat" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Chat
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Chat with other users.
+            </p>
+        </div>
+    </a>
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
     </div>
-    <div>
-        {% include 'friends.html' %}
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
+    </div>
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-6 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
+    </div>
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
+    </div>
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
+    </div>
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
+    </div>
+    <div class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
+        <div class="row-span-2 h-[200px]">
+            <img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover w-full h-full">
+        </div>
+        <div class="row-span-1 flex flex-col justify-between">
+            <h2 class="text-lg font-semibold text-[#333] mb-2">
+                Company Name
+            </h2>
+            <p class="text-gray-500 text-sm">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget nunc.
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}

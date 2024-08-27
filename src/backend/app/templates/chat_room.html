@@ -1,0 +1,66 @@
+<div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4">
+    <p class="font-bold">{{ chatRoom.name }}</p>
+</div>
+<div class="w-full flex-1 bg-white border border-[#e0e0e0] rounded-md p-4 overflow-y-auto" id="chat-log">
+    {% for message in chatRoom.messages %}
+    <div class="flex justify-between items-center">
+        <div>
+            <p class="font-bold">{{ message.user.username }}</p>
+            <p>{{ message.message }}</p>
+        </div>
+        <div>
+            <p>{{ message.created_at }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<div class="w-full flex justify-between items-center">
+    <input type="text" name="content" class="w-4/5 h-full border border-[#e0e0e0] rounded-md p-2" id="chat-message-input">
+    <button id="chat-message-submit"
+        class="w-1/5 h-full bg-[#f5f5f5] hover:bg-[#e0e0e0] border border-[#e0e0e0] p-2 rounded-md">Send</button>
+    <input type="hidden" name="chat_id" id="chatID" value="{{ chatRoom.chat_id }}">
+</div>
+<script>
+{
+    const messageTemplate = (user, message, created_at) => `
+    <div class="flex justify-between items-center">
+        <div>
+            <p class="font-bold">${user}</p>
+            <p>${message}</p>
+        </div>
+        <div>
+            <p>${created_at}</p>
+        </div>
+    </div>
+    `;
+
+    const roomID = document.getElementById('chatID').value;
+    const log = document.getElementById('chat-log');
+
+    const chatSocket = new WebSocket(
+        'wss://'
+        + window.location.host
+        + '/api/v1/chat/'
+        + roomID
+        + '/ws/'
+    ); // -> ws://localhost:8000/api/v1/chat/1/ws/
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        log.innerHTML += messageTemplate(data.user, data.message, data.created_at);
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    document.getElementById('chat-message-submit').onclick = function(e) {
+        const messageInputDom = document.getElementById('chat-message-input');
+        const message = messageInputDom.value;
+        chatSocket.send(JSON.stringify({
+            'message': message
+        }));
+        messageInputDom.value = '';
+    };
+}
+</script>

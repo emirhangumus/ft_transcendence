@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% if user.is_authenticated %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white shadow-md rounded my-6">
+        <form id="new-chat" class="bg-white rounded px-8 pt-6 pb-8 mb-4">
+            <div class="mb-4 p-4">
+                <label for="name" class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+                <input type="text" id="name" name="name"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="mb-4 p-4">
+                <label for="friends" class="block text-gray-700 text-sm font-bold mb-2">Friends</label>
+                <select id="friends" name="friends[]"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    {% for friend in friends %}
+                        <option value="{{ friend.username }}">{{ friend.first_name }} {{ friend.last_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4 p-4">
+                <button type="submit"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    {
+        const form = document.getElementById('new-chat');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const users = Array.from(document.getElementById('friends').selectedOptions).map(option => option.value);
+            const response = await fetchAPI('/api/v1/chat/new/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name,
+                    users
+                })
+            });
+            if (response.ok) {
+                setCurrentChat('/chat');
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+{% endif %}

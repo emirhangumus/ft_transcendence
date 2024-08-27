@@ -8,9 +8,9 @@ function parseCookie(cookie) {
 
 function deleteAllCookies() {
   document.cookie.split(';').forEach(cookie => {
-      const eqPos = cookie.indexOf('=');
-      const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
-      document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    const eqPos = cookie.indexOf('=');
+    const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+    document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT';
   });
 }
 
@@ -35,4 +35,78 @@ async function fetchAPI(url, init) {
   }
   const response = await fetch(url, { ...init, headers });
   return response;
+}
+
+function parseRoutes(routes) {
+  const transformedRoutes = {};
+  Object.entries(routes).forEach(([path, config]) => {
+    const variables = [];
+    const transformedPath = path.replace(/([#:])(\w+)\((\d+)\)/g, (match, symbol, name, length) => {
+      if (symbol === ':') {
+        variables.push({ name, length: parseInt(length, 10) });
+      }
+      return `${symbol}${name}(${length})`;
+    });
+
+    transformedRoutes[path] = {
+      endpoint: config.endpoint,
+      variables: variables
+    };
+  });
+
+  return transformedRoutes;
+}
+
+function getEndpoint(routes, path) {
+  for (const [routePattern, config] of Object.entries(routes)) {
+      // Split the route pattern and path into parts
+      const routeParts = routePattern.split('/').filter(Boolean);
+      const pathParts = path.split('/').filter(Boolean);
+
+      // Check if the path length matches the route length
+      if (routeParts.length !== pathParts.length) continue;
+
+      // Variables to hold matched values
+      const variables = {};
+
+      // Flag to check if the path matches the route pattern
+      let isMatch = true;
+
+      // Iterate over each part to check for match
+      for (let i = 0; i < routeParts.length; i++) {
+          const routePart = routeParts[i];
+          const pathPart = pathParts[i];
+
+          if (routePart.startsWith(':')) {
+              // Extract variable name and constraints
+              const [name, length] = routePart.slice(1).split('(');
+              const variableLength = parseInt(length, 10);
+              
+              // Validate the length of the variable
+              if (pathPart.length !== variableLength) {
+                  isMatch = false;
+                  break;
+              }
+
+              // Store the variable
+              variables[name] = pathPart;
+          } else if (routePart !== pathPart) {
+              isMatch = false;
+              break;
+          }
+      }
+
+      if (isMatch) {
+          // Replace variables in the endpoint with actual values
+          let endpoint = config.endpoint;
+          Object.keys(variables).forEach(name => {
+              endpoint = endpoint.replace(`:${name}`, variables[name]);
+          });
+
+          return endpoint;
+      }
+  }
+
+  // Return false if no match is found
+  return false;
 }

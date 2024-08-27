@@ -1,6 +1,7 @@
 const body = document.getElementById("body");
+const REFRESH_TOKEN_INTERVAL = 1000 * 60 * 1; // 1 minutes
 
-const ROUTES = {
+const ROUTES = parseRoutes({
     '/': {
         endpoint: '/api/v1'
     },
@@ -12,8 +13,18 @@ const ROUTES = {
     },
     '/friends': {
         endpoint: '/api/v1/friend'
-    }
-}
+    },
+    '/chat': {
+        endpoint: '/api/v1/chat'
+    },
+    '/chat/:id(6)': {
+        endpoint: '/api/v1/chat/:id',
+        ws: ['/chat/:id/ws']
+    },
+    '/chat/new': {
+        endpoint: '/api/v1/chat/new'
+    },
+});
 
 function makeScriptsExecutable() {
 
@@ -65,6 +76,10 @@ let MAX_TRIES = 3;
 async function renewAccessToken() {
     const cookies = parseCookie(document.cookie);
 
+    if (!cookies['refresh_token']) {
+        return ;
+    }
+
     const init = {
         method: 'POST',
         headers: {
@@ -88,9 +103,16 @@ async function renewAccessToken() {
     }
 }
 
+setInterval(() => {
+    renewAccessToken();
+}, REFRESH_TOKEN_INTERVAL);
+
 function setPage()
-{ 
-    if (ROUTES[currentPath()]) {
+{
+    console.log(ROUTES, currentPath());
+    const path = getEndpoint(ROUTES, currentPath());
+    console.log("->", path);
+    if (path) {
         const cookies = parseCookie(document.cookie);
 
         const init = {
@@ -105,14 +127,16 @@ function setPage()
             init.headers['Authorization'] = `Bearer ${cookies['access_token']}`;
         }
 
-        fetch(ROUTES[currentPath()].endpoint, init).then(async (res) => {
+        fetch(path, init).then(async (res) => {
             const t = await res.text();
 
             try {
                 const json = JSON.parse(t);
                 if (json && json.code && json.code === 'token_not_valid') {
                     if (MAX_TRIES === 0) {
-                        return body.innerHTML = "I guess we are done here";
+                        deleteAllCookies();
+                        setCurrentPath('/login');
+                        return ;
                     }
                     await renewAccessToken();
                     MAX_TRIES--;
@@ -143,4 +167,8 @@ effect(() => {
     console.log("Current path: ", currentPath());
     setPage();
     window.history.pushState({}, "", currentPath());
+});
+
+renewAccessToken().then(() => {
+    console.log("Renewed access token");
 });

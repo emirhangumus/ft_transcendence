@@ -10,9 +10,24 @@ from django.template.response import TemplateResponse
 from .utils import genResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Friendships
-from .queries.friend import getFriendState
+from .queries.friend import getFriendState, getFriends
+from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom
+import os
+from django.conf import settings
+from django.http import HttpResponse, Http404
 
 # Create your views here.
+def serve_dynamic_image(request, filename):
+    ROOT = settings.STATICFILES_DIRS[0]
+    image_path = os.path.join(ROOT, 'images', filename)
+    print(image_path)
+
+    if os.path.exists(image_path):
+        with open(image_path, 'rb') as f:
+            return HttpResponse(f.read(), content_type="image/jpeg")
+    else:
+        raise Http404("Image not found")
+
 class HomeView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
@@ -131,3 +146,46 @@ class FriendsView(APIView):
             response = genResponse(False, str(e), None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
         
+class ChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, chat_id=None):
+        user = request.user
+        
+        chatRooms = getChatRooms(user.id)
+        if (chat_id):
+            chatRoom = getChatRoom(user.id, chat_id)
+            if chatRoom:
+                return TemplateResponse(request, 'chat.html', {'chatRooms': chatRooms, 'chatRoom': {
+                    'id': chatRoom.room.id,
+                    'chat_id': chatRoom.room.chat_id,
+                    'name': chatRoom.room.name,
+                    'can_leave': chatRoom.room.can_leave,
+                    'messages': getChatMessages(chatRoom.room.id, 10)
+                }})
+        return TemplateResponse(request, 'chat.html', {'chatRooms': chatRooms})
+    
+class ChatCreateView(APIView):
+    parser_classes = [JSONParser]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        friend_dict = getFriends(request.user)
+        print(friend_dict)
+        return TemplateResponse(request, 'chat_create.html', {'friends': friend_dict})
+
+    def post(self, request):
+        try:
+            user = request.user
+            data = request.data
+            users = data['users']
+            name = data['name']
+            chatRoom = createChatRoom(name, user, users)
+            if chatRoom:
+                response = genResponse(True, "Chat room created successfully", None)
+                return Response(response, status=status.HTTP_201_CREATED)
+            response = genResponse(False, "Chat room creation failed", None)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            response = genResponse(False, str(e), None)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)

@@ -1,38 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Accounts, ChatMessages, ChatRooms, ChatUsers
-import random
-import string
-
-def generateUniqeChatRoomID():
-    chat_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    while ChatRooms.objects.filter(chat_id=chat_id).exists():
-        chat_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    return chat_id
-
-def assignChatbotRoom(userId):
-    BOT_ID = 1
-    chatbot = User.objects.get(id=BOT_ID)
-    chatroom = ChatRooms.objects.create(
-        chat_id=generateUniqeChatRoomID(),
-        name='chat.botRoom',
-        can_leave=False
-    )
-    ChatUsers.objects.create(
-        room=chatroom,
-        user=chatbot
-    )
-    ChatUsers.objects.create(
-        room=chatroom,
-        user=userId
-    )
-    ChatMessages.objects.create(
-        room=chatroom,
-        sender=chatbot,
-        message='Oyuna hoşgelmişsiniz. Ben ClapTrap Pipe.',
-        type='normal'
-    )
-    return chatroom.id
+from .queries.chat import assignChatbotRoom
 
 class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=30, required=True)
