@@ -40,12 +40,14 @@
     const chatSocket = new WebSocket(
         'wss://'
         + window.location.host
-        + '/api/v1/ws/test/'
+        + '/api/v1/chat/'
+        + roomID
+        + '/ws/'
     ); // -> ws://localhost:8000/api/v1/chat/1/ws/
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        log.innerHTML += messageTemplate(data.user, data.message, data.created_at);
+        log.innerHTML += messageTemplate(data.username, data.message, data.created_at);
     };
 
     chatSocket.onclose = function(e) {
@@ -55,8 +57,10 @@
     document.getElementById('chat-message-submit').onclick = function(e) {
         const messageInputDom = document.getElementById('chat-message-input');
         const message = messageInputDom.value;
+        console.log(message);
         chatSocket.send(JSON.stringify({
-            'message': message
+            'message': message,
+            'username': '{{ user }}',
         }));
         messageInputDom.value = '';
     };

@@ -49,6 +49,7 @@ function makeScriptsExecutable() {
         }
         // remove
         script.parentNode.removeChild(script);
+        console.log("Appending script", newScript);
         document.body.appendChild(newScript);
     });
   }

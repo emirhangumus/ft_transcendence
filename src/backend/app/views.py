@@ -156,14 +156,14 @@ class ChatView(APIView):
         if (chat_id):
             chatRoom = getChatRoom(user.id, chat_id)
             if chatRoom:
-                return TemplateResponse(request, 'chat.html', {'chatRooms': chatRooms, 'chatRoom': {
+                return TemplateResponse(request, 'chat.html', {'user': user, 'chatRooms': chatRooms, 'chatRoom': {
                     'id': chatRoom.room.id,
                     'chat_id': chatRoom.room.chat_id,
                     'name': chatRoom.room.name,
                     'can_leave': chatRoom.room.can_leave,
                     'messages': getChatMessages(chatRoom.room.id, 10)
                 }})
-        return TemplateResponse(request, 'chat.html', {'chatRooms': chatRooms})
+        return TemplateResponse(request, 'chat.html', {'user': user, 'chatRooms': chatRooms})
     
 class ChatCreateView(APIView):
     parser_classes = [JSONParser]
