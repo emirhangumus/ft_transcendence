@@ -19,10 +19,13 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
+from app import consumers
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     # path('api/v1/auth/token/', views.MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     # path('api/v1/aıuth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # path("api/v1/chat/AE2IPE/ws/", consumers.ChatConsumer.as_asgi(), name='chat_ws'),
     path('api/v1/', include('app.urls')),
 ]

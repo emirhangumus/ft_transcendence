@@ -40,9 +40,7 @@
     const chatSocket = new WebSocket(
         'wss://'
         + window.location.host
-        + '/api/v1/chat/'
-        + roomID
-        + '/ws/'
+        + '/api/v1/ws/test/'
     ); // -> ws://localhost:8000/api/v1/chat/1/ws/
 
     chatSocket.onmessage = function(e) {
