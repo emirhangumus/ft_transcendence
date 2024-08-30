@@ -79,3 +79,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_username(self, user_id):
         return User.objects.get(id=user_id).username
+
+class GameConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.game_id = self.scope['url_route']['kwargs']['game_id']
+        self.room_group_name = f'game_{self.game_id}'
+
+        # Odaya katıl
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # Odadan ayrıl
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+
+    async def chat_message(self, event):
+        pass

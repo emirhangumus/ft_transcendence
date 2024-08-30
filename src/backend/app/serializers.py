@@ -99,3 +99,18 @@ class FriendRequestActionsSerializer(serializers.Serializer):
             friendship.save()
         return friendship
     
+
+class GameCreationSerilizer(serializers.Serializer):
+    class Meta:
+        fields = ("ball_color", "map_width", "map_height", "background_color", "skill_ball_freeze", "skill_ball_speed", "powerup_slow_down_opponent", "powerup_speed_up_yourself", "powerup_revert_opponent_controls")
+
+    def validate(self, data):
+        width = data.get('map_width')
+        height = data.get('map_height')
+        if width and height:
+            if 500 <= width <= 2000 and 500 <= height <= 2000:
+                return data
+            else:
+                raise serializers.ValidationError("Invalid data")
+        else:
+            raise serializers.ValidationError("Invalid data")

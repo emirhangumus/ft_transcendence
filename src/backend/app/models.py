@@ -78,3 +78,37 @@ class Friendships(models.Model):
 
     class Meta:
         db_table = 'friendships'
+
+class GameRecords(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    game_id = models.CharField(max_length=6)
+    player1_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='game_records_player1_set')
+    player2_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='game_records_player2_set')
+    player1_score = models.IntegerField()
+    player2_score = models.IntegerField()
+    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='game_records_winner_set')
+    total_match_time = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'game_records'
+        
+class GameTypes(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    game_record = models.ForeignKey(GameRecords, models.DO_NOTHING)
+    payload = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'game_types'
+
+class GameStats(models.Model):
+    id = models.BigAutoField(GameRecords, primary_key=True)
+    game_record = models.ForeignKey(GameRecords, models.DO_NOTHING)
+    player_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
+    stats = models.JSONField()
+
+    class Meta:
+        db_table = 'game_stats'

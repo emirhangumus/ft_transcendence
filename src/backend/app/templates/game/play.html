@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% if user.is_authenticated %}
+
+{% block content %}
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+    {
+        function gameRender()
+        {
+            var canvas = document.getElementById("gameCanvas");
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(0, 0, 150, 75);
+        }
+
+
+    }
+</script>
+{% endblock %}
+
+{% endif %}

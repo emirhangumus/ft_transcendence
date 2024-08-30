@@ -18,11 +18,16 @@ const ROUTES = parseRoutes({
         endpoint: '/api/v1/chat'
     },
     '/chat/:id(6)': {
-        endpoint: '/api/v1/chat/:id',
-        ws: ['/chat/:id/ws']
+        endpoint: '/api/v1/chat/:id'
     },
     '/chat/new': {
         endpoint: '/api/v1/chat/new'
+    },
+    '/play': {
+        endpoint: '/api/v1/play'
+    },
+    '/play/:id(6)': {
+        endpoint: '/api/v1/play/:id'
     },
 });
 

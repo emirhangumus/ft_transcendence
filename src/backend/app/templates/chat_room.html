@@ -2,17 +2,7 @@
     <p class="font-bold">{{ chatRoom.name }}</p>
 </div>
 <div class="w-full flex-1 bg-white border border-[#e0e0e0] rounded-md p-4 overflow-y-auto" id="chat-log">
-    {% for message in chatRoom.messages %}
-    <div class="flex justify-between items-center">
-        <div>
-            <p class="font-bold">{{ message.user.username }}</p>
-            <p>{{ message.message }}</p>
-        </div>
-        <div>
-            <p>{{ message.created_at }}</p>
-        </div>
-    </div>
-    {% endfor %}
+    <p id="there-is-no-message">There is no message</p>
 </div>
 <div class="w-full flex justify-between items-center">
     <input type="text" name="content" class="w-4/5 h-full border border-[#e0e0e0] rounded-md p-2" id="chat-message-input">
@@ -36,7 +26,8 @@
 
     const roomID = document.getElementById('chatID').value;
     const log = document.getElementById('chat-log');
-
+    const thereIsNoMessage = document.getElementById('there-is-no-message');
+    
     const chatSocket = new WebSocket(
         'wss://'
         + window.location.host
@@ -47,6 +38,7 @@
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
+        thereIsNoMessage.style.display = 'none';
         log.innerHTML += messageTemplate(data.username, data.message, data.created_at);
     };
 

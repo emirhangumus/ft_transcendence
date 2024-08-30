@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer
+from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -14,7 +14,10 @@ from .queries.friend import getFriendState, getFriends
 from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom
 import os
 from django.conf import settings
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
+from .logic import PongGame
+import threading
+import time
 
 # Create your views here.
 def serve_dynamic_image(request, filename):
@@ -186,6 +189,63 @@ class ChatCreateView(APIView):
                 return Response(response, status=status.HTTP_201_CREATED)
             response = genResponse(False, "Chat room creation failed", None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            response = genResponse(False, str(e), None)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+class GameView(APIView):
+    # game = PongGame(width=800, height=600)
+    parser_classes = [JSONParser]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        return TemplateResponse(request, 'game/waiting_room.html')
+
+    # def doCrawl(self, task_id):
+    #     while True:
+    #         self.game.update()
+    #         print("thread")
+    #         time.sleep(1)
+
+    # def pong_game(self, request):
+    #     if request.method == "POST":
+    #         direction = request.POST.get("direction")
+    #         if direction:
+    #             self.game.move_player(direction)
+    #         return JsonResponse({
+    #             "data": {
+    #                 "ball_x": self.game.ball_x,
+    #                 "ball_y": self.game.ball_y,
+    #                 "player_y": self.game.player_y,
+    #                 "ai_y": self.game.ai_y,
+    #             }
+    #         })
+    #     else:
+    #         # t = threading.Thread(target=doCrawl,args=[1],daemon=True)
+    #         # t.start()
+    #         self.game.update()
+            
+    #         return render(request, 'pong/pong_game.html', {
+    #             "data": {
+    #                 "ball_x": self.game.ball_x,
+    #                 "ball_y": self.game.ball_y,
+    #                 "player_y": self.game.player_y,
+    #                 "ai_y": self.game.ai_y,
+    #             }
+    #         })
+
+class GameCreateView(APIView):
+    parser_classes = [JSONParser]
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        try:
+            serilizer = GameCreationSerilizer(data=request.data)
+            if serilizer.is_valid():
+                data = serilizer.validated_data
+                game = PongGame(data)
+            else:
+                response = genResponse(False, "Invalid data", serilizer.errors)
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             response = genResponse(False, str(e), None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
