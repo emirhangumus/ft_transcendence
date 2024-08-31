@@ -1,20 +1,13 @@
 from app.models import ChatRooms, ChatUsers, ChatMessages, Friendships
 from django.contrib.auth.models import User
 from django.db.models import Q
-import random
-import string
-
-def generateUniqeChatRoomID():
-    chat_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    while ChatRooms.objects.filter(chat_id=chat_id).exists():
-        chat_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    return chat_id
+from ..utils import generateRandomID
 
 def assignChatbotRoom(userId):
     BOT_ID = 1
     chatbot = User.objects.get(id=BOT_ID)
     chatroom = ChatRooms.objects.create(
-        chat_id=generateUniqeChatRoomID(),
+        chat_id=generateRandomID('chatroom'),
         name='chat.botRoom',
         can_leave=False
     )
@@ -64,7 +57,7 @@ def createChatRoom(name, createdUser, users):
             return None
         userObjects.append(u)
     
-    chatRoom = ChatRooms(name=name, chat_id=generateUniqeChatRoomID(), can_leave=True)
+    chatRoom = ChatRooms(name=name, chat_id=generateRandomID('chatroom'), can_leave=True)
     chatRoom.save()
     ChatUsers(user=createdUser, room=chatRoom).save()
     for user in userObjects:

@@ -26,8 +26,8 @@ const ROUTES = parseRoutes({
     '/play': {
         endpoint: '/api/v1/play'
     },
-    '/play/:id(6)': {
-        endpoint: '/api/v1/play/:id'
+    '/game/:id(6)': {
+        endpoint: '/api/v1/game/:id'
     },
 });
 

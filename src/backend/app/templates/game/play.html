@@ -3,18 +3,95 @@
 {% if user.is_authenticated %}
 
 {% block content %}
+<style>
+    #gameCanvas {
+        border: 1px solid black;
+    }
+</style>
 <canvas id="gameCanvas" width="800" height="600"></canvas>
 <script>
     {
-        function gameRender()
-        {
-            var canvas = document.getElementById("gameCanvas");
-            var ctx = canvas.getContext("2d");
-            ctx.fillStyle = "#FF0000";
-            ctx.fillRect(0, 0, 150, 75);
-        }
+        const canvas = document.getElementById('gameCanvas');
+        const chatSocket = new WebSocket(
+            'wss://'
+            + window.location.host
+            + '/api/v1/game/'
+            + '{{ game.id }}'
+            + '/ws/'
+        );
 
+        chatSocket.onmessage = function(e) {
+            let data = JSON.parse(e.data);
+            data = data.payload.data;
+            /**
+             * "ball_x": self.ball_x,
+            "ball_y": self.ball_y,
+            "player_y": self.player_y,
+            "ai_y": self.ai_y,
+            "opp_score": self.opp_score,
+            "player_score": self.player_score,
+            "random_power_up": self.random_power_up,
+            "random_power_up_x": self.random_power_up_x,
+            "random_power_up_y": self.random_power_up_y
+                */
 
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'black';
+            ctx.fillRect(data.ball_x, data.ball_y, 10, 10);
+
+            ctx.fillStyle = 'black';
+            ctx.fillRect(10, data.player_y, 10, 50);
+
+            ctx.fillStyle = 'black';
+            ctx.fillRect(780, data.ai_y, 10, 50);
+
+            ctx.font = '30px Arial';
+            ctx.fillText(data.player_score, 200, 50);
+            ctx.fillText(data.opp_score, 600, 50);
+
+            if (data.random_power_up) {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(data.random_power_up_x, data.random_power_up_y, 10, 10);
+            }
+        };
+
+        let upPressed = false;
+        let downPressed = false;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                upPressed = true;
+            } else if (e.key === 'ArrowDown') {
+                downPressed = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp') {
+                upPressed = false;
+            } else if (e.key === 'ArrowDown') {
+                downPressed = false;
+            }
+        });
+
+        setInterval(() => {
+            if (upPressed && downPressed) {
+                return;
+            }
+            if (upPressed) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'move',
+                    'direction': 'up'
+                }));
+            } else if (downPressed) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'move',
+                    'direction': 'down'
+                }));
+            }
+        }, 1000 / 20);
     }
 </script>
 {% endblock %}

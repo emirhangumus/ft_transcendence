@@ -101,16 +101,25 @@ class FriendRequestActionsSerializer(serializers.Serializer):
     
 
 class GameCreationSerilizer(serializers.Serializer):
-    class Meta:
-        fields = ("ball_color", "map_width", "map_height", "background_color", "skill_ball_freeze", "skill_ball_speed", "powerup_slow_down_opponent", "powerup_speed_up_yourself", "powerup_revert_opponent_controls")
-
+    ball_color = serializers.CharField(max_length=7, required=True)
+    map_width = serializers.IntegerField(required=True)
+    map_height = serializers.IntegerField(required=True)
+    background_color = serializers.CharField(max_length=7, required=True)
+    
+    skill_ball_freeze = serializers.BooleanField(required=True)
+    skill_ball_speed = serializers.BooleanField(required=True)
+    
+    powerup_slow_down_opponent = serializers.BooleanField(required=True)
+    powerup_speed_up_yourself = serializers.BooleanField(required=True)
+    powerup_revert_opponent_controls = serializers.BooleanField(required=True)
+    
     def validate(self, data):
-        width = data.get('map_width')
-        height = data.get('map_height')
+        width = data['map_width']
+        height = data['map_height']
         if width and height:
-            if 500 <= width <= 2000 and 500 <= height <= 2000:
+            if 500 <= int(width) <= 2000 and 500 <= int(height) <= 2000:
                 return data
             else:
-                raise serializers.ValidationError("Invalid data")
+                raise serializers.ValidationError("Invalid data 2")
         else:
-            raise serializers.ValidationError("Invalid data")
+            raise serializers.ValidationError("Invalid data 1")

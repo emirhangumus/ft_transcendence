@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView
+from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView
 from . import consumers
 
 urlpatterns = [
@@ -19,4 +19,6 @@ urlpatterns = [
     # path("api/v1/chat/AE2IPE/ws/", consumers.ChatConsumer.as_asgi(), name='chat_ws'),
     # path('ws/chat/<str:chat_id>/', consumers.ChatConsumer),
     path('play/', GameView.as_view(), name='play'),
+    path('game/create/', GameCreateView.as_view(), name='create_game'),
+    path('game/<str:game_id>/', GamePlayView.as_view(), name='game'),
 ]

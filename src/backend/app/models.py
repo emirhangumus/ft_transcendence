@@ -81,18 +81,31 @@ class Friendships(models.Model):
 
 class GameRecords(models.Model):
     id = models.BigAutoField(primary_key=True)
-    game_id = models.CharField(max_length=6)
-    player1_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='game_records_player1_set')
-    player2_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='game_records_player2_set')
+    game_id = models.CharField(
+        max_length=6,
+        validators=[MaxLengthValidator(6)],
+        null=False,
+        blank=False
+    )
     player1_score = models.IntegerField()
     player2_score = models.IntegerField()
-    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='game_records_winner_set')
+    winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, blank=True, null=True)
     total_match_time = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'game_records'
+        
+class GamePlayers(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    game_record = models.ForeignKey(GameRecords, models.DO_NOTHING)
+    player_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'game_players'
         
 class GameTypes(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -107,7 +120,6 @@ class GameTypes(models.Model):
 class GameStats(models.Model):
     id = models.BigAutoField(GameRecords, primary_key=True)
     game_record = models.ForeignKey(GameRecords, models.DO_NOTHING)
-    player_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
     stats = models.JSONField()
 
     class Meta:

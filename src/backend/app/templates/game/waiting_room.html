@@ -5,16 +5,14 @@
 {% block content %}
 <div>
     <select id="ball-color" class="block w-full mt-4 p-2 border border-gray-300 rounded">
-        <option value="blue">Blue Ball</option>
-        <option value="red">Red Ball</option>
-        <option value="green">Green Ball</option>
-        <option value="purple">Purple Ball</option>
-        <option value="pink">Pink Ball</option>
+        <option value="#0000ff">Blue Ball</option>
+        <option value="#ff000">Red Ball</option>
+        <option value="#00ff00">Green Ball</option>
     </select>
 
-    <input type="number" id="map-width" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Map Width">
+    <input type="number" id="map-width" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Map Width" value="800">
 
-    <input type="number" id="map-height" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Map Height">
+    <input type="number" id="map-height" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Map Height" value="600">
 
     <input type="color" id="background-color" class="block w-full mt-4 p-2 border border-gray-300 rounded h-8" placeholder="Background Color">
 
@@ -47,7 +45,7 @@
         const powerupSpeedUpYourself = document.getElementById('powerup-speed-up-yourself').checked;
         const powerupRevertOpponentControls = document.getElementById('powerup-revert-opponent-controls').checked;
 
-        const response = await fetch('api/v1/game/create', {
+        const response = await fetchAPI('api/v1/game/create/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -55,8 +53,8 @@
             },
             body: JSON.stringify({
                 ball_color: ballColor,
-                map_width: mapWidth,
-                map_height: mapHeight,
+                map_width: +mapWidth,
+                map_height: +mapHeight,
                 background_color: backgroundColor,
                 skill_ball_freeze: skillBallFreeze,
                 skill_ball_speed: skillBallSpeed,
@@ -67,8 +65,11 @@
         });
 
         const data = await response.json();
-        if (data.success) {
-            window.location.href = `/game/${data.gameId}`;
+        console.log(data);
+        if (data.status) {
+            const body = document.querySelector('body');
+            body.style.overflow = 'hidden';
+            setCurrentPath('/game/' + data.data.game_id);
         }
     });
 }
