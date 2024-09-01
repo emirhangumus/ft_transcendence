@@ -266,7 +266,7 @@ class TournamentConsumer(AsyncWebsocketConsumer):
         user_data = checkAuthForWS(self.scope)
         if user_data and user_data['valid']:
             self.tournament_id = self.scope['url_route']['kwargs']['tournament_id']
-            self.room_group_name = f'game_{self.tournament_id}'
+            self.room_group_name = f'tournament_{self.tournament_id}'
 
             # Odaya katıl
             await self.channel_layer.group_add(
@@ -275,7 +275,9 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             )
             await self.accept()
             user = await self.get_user(user_data['user_id'])
-            tournamentManager.add_player(self.tournament_id, user, self)
+            if user:
+                self.user_id = user.id
+                tournamentManager.add_player(self.tournament_id, user, self)
         else:
             await self.close()
 
@@ -285,6 +287,8 @@ class TournamentConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        user = await self.get_user(self.user_id)
+        tournamentManager.remove_player(self.tournament_id, user)
 
     async def receive(self, text_data):
         data = json.loads(text_data)

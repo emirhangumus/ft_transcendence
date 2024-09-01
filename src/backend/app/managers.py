@@ -116,6 +116,7 @@ class NotificationManager:
             
 class Tournament:
     started = False
+    game_started = False
     
     def __init__(self, players, manager):
         self.players = players
@@ -137,13 +138,16 @@ class Tournament:
         pass
     
     def add_player(self, player, channel):
-        if player.id in self.players or self.started:
+        if player.id in self.players or self.game_started:
             return
         self.players[player.id] = {
             'channel': channel,
             'player': player
         }
-        print(self.players)
+    
+    def remove_player(self, player):
+        if player.id in self.players:
+            del self.players[player.id]
     
     def end(self):
         pass
@@ -163,12 +167,16 @@ class TournamentManager:
         # self.tournaments[tournament_id].start()
         
     def add_player(self, tournament_id, player, channel):
-        print(self.tournaments[tournament_id].get_players())
         if tournament_id not in self.tournaments:
             return
         if player.id in self.tournaments[tournament_id].get_players():
             return
         self.tournaments[tournament_id].add_player(player, channel)
+        
+    def remove_player(self, tournament_id, player):
+        if tournament_id not in self.tournaments:
+            return
+        self.tournaments[tournament_id].remove_player(player)
     
     def start(self):
         if self.started:
@@ -184,13 +192,16 @@ class TournamentManager:
             asyncio.run(self.__process())
         
     async def __process(self):
-        pass
+        # for tournament_id in self.tournaments:
+            # await self.tournaments[tournament_id].__process()
+        await asyncio.sleep(0.2)
     
     async def initial_up(self):
         tournaments = list(await self.get_pending_tournaments())
         for tournament in tournaments:
-            self.tournaments[tournament.id] = Tournament({}, self)
-            self.tournaments[tournament.id].start()
+            self.tournaments[tournament.tournament_id] = Tournament({}, self)
+            self.tournaments[tournament.tournament_id].start()
+        print(self.tournaments)
 
     @sync_to_async
     def get_pending_tournaments(self):
