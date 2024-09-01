@@ -1,13 +1,15 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 import json
-from .models import ChatRooms, ChatMessages
+from .models import ChatRooms, ChatMessages, ChatUsers
 from django.contrib.auth.models import User
-from .logic import PongGame
-import threading
 import time
-from .jwt import PingPongObtainPairSerializer, validate_access_token, validate_refresh_token
 import asyncio
+from .utils import checkAuthForWS
+from .managers import NotificationManager
+
+game_rooms = {}
+notificationManager = NotificationManager()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -48,6 +50,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if message and username:
             # Mesajı kaydet ve gruba yayınla
             user, message_obj = await self.save_message(username, self.chat_id, message)
+            users_that_are_in_chat = await self.get_users_in_chat(self.chat_id)
+            for chat_user in users_that_are_in_chat:
+                if chat_user['user_id'] != user.id:
+                    notificationManager.add_notification(chat_user['user_id'], f'{user.username} sent a message to chat {self.chat_id}')
             if user and message_obj:
                 await self.channel_layer.group_send(
                     self.room_group_name,
@@ -83,42 +89,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_username(self, user_id):
         return User.objects.get(id=user_id).username
-
-
-def gameTread(self, game):
-    while True:
-        game.update()
-        print("thread")
-        time.sleep(1)
-        if game.end_game() or game.timeout():
-            break
-
-def cookieParser(cookie):
-    cookies = {}
-    for c in cookie.decode().split('; '):
-        key, value = c.split('=')
-        cookies[key] = value
-    return cookies
-
-def findCookie(scope):
-    for header in scope['headers']:
-        if header[0] == b'cookie':
-            return cookieParser(header[1])
-
-game_rooms = {}
+    
+    @sync_to_async
+    def get_users_in_chat(self, chat_id):
+        room = ChatRooms.objects.get(chat_id=chat_id)
+        return list(ChatUsers.objects.filter(room=room).values('user_id'))
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        print(game_rooms)
-        cookies = findCookie(self.scope)
-        if not cookies:
-            await self.close()
-            return
-        user_payload = cookies['access_token']
-        if not user_payload:
-            await self.close()
-            return
-        user_data = validate_access_token(user_payload)
+        user_data = checkAuthForWS(self.scope)
         if user_data and user_data['valid']:
             self.game_id = self.scope['url_route']['kwargs']['game_id']
             self.room_group_name = f'game_{self.game_id}'
@@ -170,7 +149,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             if self.channel_name == game_rooms[self.room_group_name]['player1']['self'].channel_name:
                 game_rooms[self.room_group_name]['game'].move_player(data['direction'])
             elif self.channel_name == game_rooms[self.room_group_name]['player2']['self'].channel_name:
-                game_rooms[self.room_group_name]['game'].player2_move(data['direction'])
+                game_rooms[self.room_group_name]['game'].move_player2(data['direction'])
 
     async def stream_data(self):
         while True:
@@ -201,3 +180,36 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def game_data(self, event):
         # Send the game data to WebSocket
         await self.send(text_data=json.dumps(event['message']))
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.check_notification_manager()
+        user_data = checkAuthForWS(self.scope)
+        if user_data and user_data['valid']:
+            self.user_id = user_data['user_id']
+            self.room_group_name = f'notifications_{self.user_id}'
+            # Odaya katıl
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+            await self.accept()
+            notificationManager.register_user(self, self.user_id)
+        else:
+            await self.close()
+            
+    def check_notification_manager(self):
+        notificationManager.start()
+
+    async def disconnect(self, close_code):
+        # Odadan ayrıl
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+        notificationManager.unregister_user(self.user_id)
+        
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        if data['type'] == 'clear':
+            await notificationManager.mark_as_read_all(self.user_id)

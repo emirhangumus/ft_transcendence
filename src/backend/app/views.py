@@ -19,7 +19,7 @@ from django.http import HttpResponse, Http404, JsonResponse
 from .logic import PongGame
 import threading
 import time
-from .consumers import game_rooms
+from .consumers import game_rooms, notificationManager
 
 # Create your views here.
 def serve_dynamic_image(request, filename):

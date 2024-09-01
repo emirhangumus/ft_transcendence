@@ -124,3 +124,22 @@ class GameStats(models.Model):
 
     class Meta:
         db_table = 'game_stats'
+
+class Notifications(models.Model):
+    NOTIFICATION_TYPES = [
+        ('normal', 'Normal'),
+        ('friend_request', 'Friend Request'),
+        ('match_invite', 'Match Invite'),
+        ('match_result', 'Match Result'),
+    ]
+
+    id = models.BigAutoField(primary_key=True)
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING)
+    type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    payload = models.JSONField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'notifications'

@@ -31,6 +31,12 @@ const ROUTES = parseRoutes({
     },
 });
 
+const openedSockets = {};
+const [currentPath, setCurrentPath] = signal(window.location.pathname);
+let notificationWS = null;
+let MAX_TRIES = 3;
+let cleanupFunctions = [];
+
 function makeScriptsExecutable() {
 
     // remove all the scripts that have been executed
@@ -57,9 +63,8 @@ function makeScriptsExecutable() {
         console.log("Appending script", newScript);
         document.body.appendChild(newScript);
     });
-  }
+}
 
-const [currentPath, setCurrentPath] = signal(window.location.pathname);
 
 function disableAllAnchorTags() {
     const anchorTags = document.getElementsByTagName("a");
@@ -76,8 +81,6 @@ function disableAllAnchorTags() {
 window.onpopstate = function () {
     setCurrentPath(window.location.pathname);
 }
-
-let MAX_TRIES = 3;
 
 async function renewAccessToken() {
     const cookies = parseCookie(document.cookie);
@@ -112,6 +115,46 @@ async function renewAccessToken() {
 setInterval(() => {
     renewAccessToken();
 }, REFRESH_TOKEN_INTERVAL);
+
+function notificationFunc() {
+    const path = currentPath();
+
+    if (path != '/login' && path != '/register' && notificationWS == null) {
+        notificationWS = new WebSocket('wss://' + window.location.host + '/api/v1/notification/ws/');
+
+        notificationWS.onopen = function () {
+            console.log('WebSocket connected');
+        }
+
+        notificationWS.onmessage = function (event) {
+            const notificationList = document.getElementById('notificationList');
+            const data = JSON.parse(event.data);
+            if (data.type == 'notifications') {
+                const el = document.createElement('li');
+                const no = data.notification;
+                if (no.type == 'normal') {
+                    el.innerHTML = `<div>${no.message}</div>`;
+                }
+
+                notificationList.appendChild(el);
+            }
+            console.log('WebSocket message received:', data);
+        }
+
+        notificationWS.onclose = function () {
+            console.log('WebSocket disconnected');
+        }
+    } else if (path == '/login' || path == '/register') {
+        if (notificationWS) {
+            notificationWS.close();
+            notificationWS = null;
+        }
+    }
+}
+
+function runAfterRender() {
+    notificationFunc();
+}
 
 function setPage()
 {
@@ -158,9 +201,16 @@ function setPage()
                 // do nothing
             }
 
+            for (const cleanup of cleanupFunctions) {
+                if (typeof cleanup === 'function')
+                    cleanup();
+            }
+            cleanupFunctions = [];
+
             body.innerHTML = t;
             disableAllAnchorTags();
             makeScriptsExecutable();
+            runAfterRender();
             MAX_TRIES = 3;
         })
     }

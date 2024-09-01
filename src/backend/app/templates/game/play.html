@@ -23,17 +23,17 @@
         chatSocket.onmessage = function(e) {
             let data = JSON.parse(e.data);
             data = data.payload.data;
-            /**
-             * "ball_x": self.ball_x,
-            "ball_y": self.ball_y,
-            "player_y": self.player_y,
-            "ai_y": self.ai_y,
-            "opp_score": self.opp_score,
-            "player_score": self.player_score,
-            "random_power_up": self.random_power_up,
-            "random_power_up_x": self.random_power_up_x,
-            "random_power_up_y": self.random_power_up_y
-                */
+            /*
+                "ball_x": self.ball_x,
+                "ball_y": self.ball_y,
+                "player_y": self.player_y,
+                "ai_y": self.ai_y,
+                "opp_score": self.opp_score,
+                "player_score": self.player_score,
+                "random_power_up": self.random_power_up,
+                "random_power_up_x": self.random_power_up_x,
+                "random_power_up_y": self.random_power_up_y
+            */
 
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
