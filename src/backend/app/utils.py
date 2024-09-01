@@ -1,4 +1,4 @@
-from app.models import ChatRooms, GameRecords
+from app.models import ChatRooms, GameRecords, Tournaments
 import random
 import string
 import time
@@ -25,11 +25,14 @@ def genResponse(status: bool, message: str, data: dict | None) -> dict:
 def generateRandomID(lookup, length=6) -> str:
     id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
     match lookup:
-        case 'chatroom':
+        case 'chatrooms':
             while ChatRooms.objects.filter(chat_id=id).exists():
                 id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
         case 'gamerecords':
             while GameRecords.objects.filter(game_id=id).exists():
+                id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        case 'tournaments':
+            while Tournaments.objects.filter(tournament_id=id).exists():
                 id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
         case _:
             raise ValueError('Invalid lookup')

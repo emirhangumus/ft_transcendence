@@ -4,6 +4,10 @@
 
 {% block content %}
 <div>
+    <input type="hidden" id="room-type" value="tournament">
+    <input type="text" id="tournament-name" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Tournament Name">
+    <input type="number" id="tournament-players" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Number of Players">
+
     <select id="ball-color" class="block w-full mt-4 p-2 border border-gray-300 rounded">
         <option value="blue">Blue Ball</option>
         <option value="red">Red Ball</option>
@@ -38,6 +42,8 @@
     const availabletRoomTypes = ['ai', 'multi', 'tournament'];
 
     startGameButton.addEventListener('click', async () => {
+        const tournamentName = document.getElementById('tournament-name').value;
+        const tournamentPlayers = document.getElementById('tournament-players').value;
         const ballColor = document.getElementById('ball-color').value;
         const mapWidth = document.getElementById('map-width').value;
         const mapHeight = document.getElementById('map-height').value;
@@ -48,37 +54,53 @@
         const powerupSpeedUpYourself = document.getElementById('powerup-speed-up-yourself').checked;
         const powerupRevertOpponentControls = document.getElementById('powerup-revert-opponent-controls').checked;
 
-        const room_type = new URLSearchParams(window.location.search).get('type');
+        const room_type = document.getElementById('room-type').value;
+
+        if (!tournamentName) {
+            alert('Invalid tournament name');
+            return;
+        }
+
+        if (!tournamentPlayers || tournamentPlayers < 2) {
+            alert('Invalid number of players');
+            return;
+        }
 
         if (!availabletRoomTypes.includes(room_type)) {
             alert('Invalid room type');
             return;
         }
 
-        const response = await fetchAPI('/api/v1/game/create/', {
+        const response = await fetchAPI('/api/v1/tournament/new/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
-                room_type: room_type,
-                ball_color: ballColor,
-                map_width: +mapWidth,
-                map_height: +mapHeight,
-                background_color: backgroundColor,
-                skill_ball_freeze: skillBallFreeze,
-                skill_ball_speed: skillBallSpeed,
-                powerup_slow_down_opponent: powerupSlowDownOpponent,
-                powerup_speed_up_yourself: powerupSpeedUpYourself,
-                powerup_revert_opponent_controls: powerupRevertOpponentControls
+                tournament: {
+                    name: tournamentName,
+                    player_amount: +tournamentPlayers,
+                },
+                game: {
+                    room_type: room_type,
+                    ball_color: ballColor,
+                    map_width: +mapWidth,
+                    map_height: +mapHeight,
+                    background_color: backgroundColor,
+                    skill_ball_freeze: skillBallFreeze,
+                    skill_ball_speed: skillBallSpeed,
+                    powerup_slow_down_opponent: powerupSlowDownOpponent,
+                    powerup_speed_up_yourself: powerupSpeedUpYourself,
+                    powerup_revert_opponent_controls: powerupRevertOpponentControls
+                }
             })
         });
 
         const data = await response.json();
         console.log(data);
         if (data.status) {
-            setCurrentPath('/game/' + data.data.game_id);
+            setCurrentPath('/tournament/' + data.data.tournament_id);
         }
     });
 }

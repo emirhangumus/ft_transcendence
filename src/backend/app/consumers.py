@@ -1,39 +1,55 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 import json
-from .models import ChatRooms, ChatMessages, ChatUsers
+from .models import ChatRooms, ChatMessages, ChatUsers, Notifications
 from django.contrib.auth.models import User
 import time
 import asyncio
 from .utils import checkAuthForWS
-from .managers import NotificationManager
+from .managers import NotificationManager, TournamentManager
 
 game_rooms = {}
+user_room_pairs = {}
 notificationManager = NotificationManager()
+tournamentManager = TournamentManager()
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    user_data = {}
+    
     async def connect(self):
-        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
-        self.room_group_name = f'chat_{self.chat_id}'
+        user_data = checkAuthForWS(self.scope)
+        if user_data and user_data['valid']:
+            self.user_data = user_data
+            self.chat_id = self.scope['url_route']['kwargs']['chat_id']
+            self.room_group_name = f'chat_{self.chat_id}'
 
-        # Odaya katıl
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+            # Odaya katıl
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
 
-        await self.accept()
+            # if the user is in user_room_pairs, remove it
+            if self.room_group_name in user_room_pairs:
+                try:
+                    index = user_room_pairs[self.room_group_name].index(user_data['user_id'])
+                    del user_room_pairs[self.room_group_name][index]
+                except ValueError:
+                    pass
+            await self.accept()
+            user_room_pairs[self.room_group_name] = user_room_pairs.get(self.room_group_name, [])
+            user_room_pairs[self.room_group_name].append(user_data['user_id'])
 
-        messages = await self.get_previous_messages(self.chat_id)
-
-        if messages:
-            for message in messages:
-                username = await self.get_username(message.sender_id)
-                await self.send(text_data=json.dumps({
-                    'created_at': message.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                    'message': message.message,
-                    'username': username
-                }))
+            messages = await self.get_previous_messages(self.chat_id)
+            print("oooo->" ,user_room_pairs)
+            if messages:
+                for message in messages:
+                    username = await self.get_username(message.sender_id)
+                    await self.send(text_data=json.dumps({
+                        'created_at': message.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                        'message': message.message,
+                        'username': username
+                    }))
 
     async def disconnect(self, close_code):
         # Odadan ayrıl
@@ -41,6 +57,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        if self.room_group_name in user_room_pairs:
+            try:
+                index = user_room_pairs[self.room_group_name].index(self.user_data['user_id'])
+                del user_room_pairs[self.room_group_name][index]
+            except ValueError:
+                pass
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -52,7 +74,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user, message_obj = await self.save_message(username, self.chat_id, message)
             users_that_are_in_chat = await self.get_users_in_chat(self.chat_id)
             for chat_user in users_that_are_in_chat:
-                if chat_user['user_id'] != user.id:
+                if chat_user['user_id'] != user.id and not self.is_user_in_channel(chat_user['user_id']):
+                    print("->", user_room_pairs)
+                    print("->", self.is_user_in_channel(chat_user['user_id']))
                     notificationManager.add_notification(chat_user['user_id'], f'{user.username} sent a message to chat {self.chat_id}')
             if user and message_obj:
                 await self.channel_layer.group_send(
@@ -73,6 +97,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'username': username
         }))
+        
+    def is_user_in_channel(self, user_id):
+        for room in user_room_pairs:
+            if user_id in user_room_pairs[room]:
+                return True
+        return False
 
     @sync_to_async
     def save_message(self, username, chat_id, message):
@@ -195,11 +225,16 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             )
             await self.accept()
             notificationManager.register_user(self, self.user_id)
+            notifications = await self.get_notifications(self.user_id, 'no')
+            for notification in notifications:
+                message = notification.payload.get('message')
+                notificationManager.add_notification(self.user_id, message, notification.payload, notification.type, False)
         else:
             await self.close()
             
     def check_notification_manager(self):
         notificationManager.start()
+        tournamentManager.start()
 
     async def disconnect(self, close_code):
         # Odadan ayrıl
@@ -213,3 +248,48 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         if data['type'] == 'clear':
             await notificationManager.mark_as_read_all(self.user_id)
+
+    @sync_to_async
+    def get_notifications(self, user_id, is_read='all'):
+        if is_read == 'all':
+            notifications = Notifications.objects.filter(receiver=user_id)
+        else:
+            if is_read == 'yes':
+                is_read = True
+            else:
+                is_read = False
+            notifications = Notifications.objects.filter(receiver=user_id, is_read=is_read)
+        return list(notifications)
+
+class TournamentConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        user_data = checkAuthForWS(self.scope)
+        if user_data and user_data['valid']:
+            self.tournament_id = self.scope['url_route']['kwargs']['tournament_id']
+            self.room_group_name = f'game_{self.tournament_id}'
+
+            # Odaya katıl
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+            await self.accept()
+            user = await self.get_user(user_data['user_id'])
+            tournamentManager.add_player(self.tournament_id, user, self)
+        else:
+            await self.close()
+
+    async def disconnect(self, close_code):
+        # Odadan ayrıl
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        print(data)
+    
+    @sync_to_async
+    def get_user(self, user_id):
+        return User.objects.get(id=user_id)

@@ -24,6 +24,9 @@
                             const claslist = notificationList.classList;
                             if (claslist.contains('hidden')) {
                                 claslist.remove('hidden');
+                                notificationWS.send(JSON.stringify({
+                                    'type': 'clear',
+                                }));
                             } else {
                                 claslist.add('hidden');
                             }
@@ -31,21 +34,24 @@
                         btn.addEventListener('click', handler);
                     }
 
-                    function cleanup()
-                    {
+                    function cleanup() {
                         const notificationList = document.getElementById('notificationList');
-                        notificationList.innerHTML = '';
+                        if (notificationList)
+                            notificationList.innerHTML = '';
 
                         const notificationMenu = document.getElementById('notificationMenu');
-                        notificationMenu.classList.add('hidden');
+                        if (notificationMenu)
+                            notificationMenu.classList.add('hidden');
 
                         const toggleNotification = document.getElementById('toggleNotification');
-                        toggleNotification.removeEventListener('click', handler);
+                        if (toggleNotification)
+                            toggleNotification.removeEventListener('click', handler);
                     }
                     cleanupFunctions.push(cleanup);
                 }
             </script>
             <ul
+                id="collapseMenuList"
                 class='lg:flex gap-x-5 max-lg:space-y-3 max-lg:fixed max-lg:bg-white max-lg:w-1/2 max-lg:min-w-[300px] max-lg:top-0 max-lg:left-0 max-lg:p-6 max-lg:h-full max-lg:shadow-md max-lg:overflow-auto z-50'>
                 <li class='mb-6 hidden max-lg:block'>
                     <a href="/">
@@ -53,23 +59,22 @@
                     </a>
                 </li>
                 <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
-                    <a href='javascript:void(0)'
-                        class='hover:text-[#007bff] text-[#007bff] block font-semibold text-[15px]'>Home</a>
+                    <a href='/' class='hover:text-[#007bff] text-gray-500block font-semibold text-[15px]'>Home</a>
                 </li>
-                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'><a href='javascript:void(0)'
-                        class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Team</a>
+                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
+                    <a href='/chat' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Chat</a>
                 </li>
-                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'><a href='javascript:void(0)'
-                        class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Feature</a>
+                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
+                    <a href='/friends' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Friends</a>
                 </li>
-                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'><a href='javascript:void(0)'
-                        class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Blog</a>
+                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
+                    <a href='/play?type=ai' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Play AI</a>
                 </li>
-                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'><a href='javascript:void(0)'
-                        class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>About</a>
+                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
+                    <a href='/play?type=multi' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Play Multi</a>
                 </li>
-                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'><a href='javascript:void(0)'
-                        class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Contact</a>
+                <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
+                    <a href='/tournament' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Tournament</a>
                 </li>
             </ul>
         </div>
@@ -134,6 +139,22 @@
     {% block content %}
     {% endblock %}
 </div>
+
+<script>
+{
+    const atags = document.querySelectorAll('#collapseMenuList a');
+    atags.forEach(atag => {
+        console.log(atag.href, window.location.href);
+        if (atag.href === window.location.href) {
+            atag.classList.remove('text-gray-500');
+            atag.classList.add('text-[#007bff]');
+        } else {
+            atag.classList.remove('text-[#007bff]');
+            atag.classList.add('text-gray-500');
+        }
+    });
+}
+</script>
 
 <footer class='bg-[#f8f9fa] py-10 px-4 sm:px-10'>
     <div class='flex flex-wrap gap-5'>

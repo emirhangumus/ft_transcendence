@@ -113,6 +113,8 @@ class GameCreationSerilizer(serializers.Serializer):
     powerup_speed_up_yourself = serializers.BooleanField(required=True)
     powerup_revert_opponent_controls = serializers.BooleanField(required=True)
     
+    room_type = serializers.CharField(max_length=12, required=True)
+    
     def validate(self, data):
         width = data['map_width']
         height = data['map_height']
@@ -120,6 +122,20 @@ class GameCreationSerilizer(serializers.Serializer):
             if 500 <= int(width) <= 2000 and 500 <= int(height) <= 2000:
                 return data
             else:
-                raise serializers.ValidationError("Invalid data 2")
+                raise serializers.ValidationError("Invalid map size")
         else:
-            raise serializers.ValidationError("Invalid data 1")
+            raise serializers.ValidationError("Invalid data")
+        
+class TournamentSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=64, required=True)
+    player_amount = serializers.IntegerField(required=True)
+    
+    def validate(self, data):
+        player_amount = data['player_amount']
+        if player_amount:
+            if 2 <= int(player_amount) <= 32:
+                return data
+            else:
+                raise serializers.ValidationError("Invalid player amount")
+        else:
+            raise serializers.ValidationError("Invalid data")

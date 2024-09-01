@@ -24,10 +24,20 @@ const ROUTES = parseRoutes({
         endpoint: '/api/v1/chat/new'
     },
     '/play': {
-        endpoint: '/api/v1/play'
+        endpoint: '/api/v1/play',
+        queryParams: ['type']
     },
     '/game/:id(6)': {
         endpoint: '/api/v1/game/:id'
+    },
+    '/tournament': {
+        endpoint: '/api/v1/tournament'
+    },
+    '/tournament/:id(6)': {
+        endpoint: '/api/v1/tournament/:id'
+    },
+    '/tournament/new': {
+        endpoint: '/api/v1/tournament/new'
     },
 });
 

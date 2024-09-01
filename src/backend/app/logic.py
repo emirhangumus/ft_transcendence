@@ -1,6 +1,8 @@
 import random
 import time
 from .utils import threaded
+from .consumers import game_rooms
+import asyncio
 
 class PongGame:
     available_attr = ["ball_color", "map_width", "map_height", "background_color", "skill_ball_freeze", "skill_ball_speed", "powerup_slow_down_opponent", "powerup_speed_up_yourself", "powerup_revert_opponent_controls"]
@@ -9,9 +11,9 @@ class PongGame:
     stoped = False
     threshold = 50
     power_up_time = 5319
-    is_multiplayer = False
 
-    def __init__(self, data):
+
+    def __init__(self, data, room_id):
         for key in data:
             if key in self.available_attr:
                 setattr(self, key, data[key])
@@ -21,6 +23,7 @@ class PongGame:
         self.height = data["map_height"]
         self.ball_x = self.width / 2
         self.ball_y = self.height / 2
+        self.effected = False
         self.ball_speed_x = 2.5
         self.ball_speed_y = 2.5
         self.ball_speed_factor = 1.1
@@ -34,6 +37,10 @@ class PongGame:
         self.random_power_up_y = None
         self.is_game_over = False
         self.last_hitter = None
+        self.is_multiplayer = data["room_type"] == "multi"
+        self.room_id = room_id
+        self.how_many_players = 0
+        self.state = "waiting_for_players"
         self.start()
         
     def is_in_range(self, threshold=threshold):
@@ -49,8 +56,22 @@ class PongGame:
             "opp_score": self.opp_score,
             "player_score": self.player_score,
             "random_power_up": self.random_power_up,
-            "random_power_up_x": self.random_power_up_x,
-            "random_power_up_y": self.random_power_up_y
+           "random_power_up_x": self.random_power_up_x - (self.threshold / 2) if self.random_power_up else None,
+            "random_power_up_y": self.random_power_up_y - (self.threshold / 2) if self.random_power_up else None,
+            "threshold": self.threshold,
+            "is_multi_player": self.is_multiplayer,
+            "state": self.state,
+            "customizations": {
+                "ball_color": self.ball_color,
+                "map_width": self.map_width,
+                "map_height": self.map_height,
+                "background_color": self.background_color,
+                "skill_ball_freeze": self.skill_ball_freeze,
+                "skill_ball_speed": self.skill_ball_speed,
+                "powerup_slow_down_opponent": self.powerup_slow_down_opponent,
+                "powerup_speed_up_yourself": self.powerup_speed_up_yourself,
+                "powerup_revert_opponent_controls": self.powerup_revert_opponent_controls
+            }
         }
     
     @threaded 
@@ -61,21 +82,38 @@ class PongGame:
             #make it 60 fps
             time.sleep(1/60)
 
-    def update(self):
-        self.render_power_up()
-        self.ball_x += self.ball_speed_x
-        self.ball_y += self.ball_speed_y
+    def reset_power_up(self):
+        self.effected = True
 
-        self.powerup_checker()
-        # Ball collision
-        self.ball_collision()
-        # Paddle collision
-        self.paddle_collision()
-        # AI
-        if not self.is_multiplayer:
-                self.move_ai()
-        # End game
-        self.end_game()
+    starting_countdown = 3
+    def update(self):
+        self.how_many_player_here()
+        if (self.is_multiplayer and self.how_many_players == 2) or (self.how_many_players == 1 and not self.is_multiplayer):
+            if self.state == "waiting_for_players":
+                self.state = "game_is_starting"
+            if self.state == "playing":
+                self.render_power_up()
+                self.ball_x += self.ball_speed_x
+                self.ball_y += self.ball_speed_y
+                self.powerup_checker()
+                # Ball collision
+                self.ball_collision()
+                # Paddle collision
+                self.paddle_collision()
+                # AI
+                if not self.is_multiplayer:
+                    self.move_ai()
+                # End game
+                self.end_game()
+            if self.state == "game_is_starting":
+                time.sleep(1)
+                self.starting_countdown -= 1
+                if self.starting_countdown == -1:
+                    self.state = "playing"
+                    self.starting_countdown = 3
+        elif self.how_many_players == 0 or (self.how_many_players == 1 and self.is_multiplayer):
+            self.state = "waiting_for_players"
+
  
     def render_power_up(self):
         time_now = time.time()
@@ -84,23 +122,31 @@ class PongGame:
             self.random_power_up = random.choice(["powerup_slow_down_opponent", "powerup_speed_up_yourself", "powerup_revert_opponent_controls"])
             self.random_power_up_x = random.randint(0, self.width)
             self.random_power_up_y = random.randint(0, self.height)
+    
+    def how_many_player_here(self):
+        if game_rooms[f"game_{self.room_id}"]["player1"] and game_rooms[f"game_{self.room_id}"]["player2"]:
+            self.how_many_players = 2
+        elif game_rooms[f"game_{self.room_id}"]["player1"]:
+            self.how_many_players = 1
+        else:
+            self.how_many_players = 0
+
 
     def move_ai(self):
         paddle_speed = self.paddle_speed
         if self.random_power_up == "powerup_slow_down_opponent" and self.is_in_range(threshold=900) and self.last_hitter == "player":
-            print("slow down")
-            paddle_speed -= 3
+            print("slow down player")
+            paddle_speed -= 5
         elif self.random_power_up == "powerup_revert_opponent_controls" and self.is_in_range() and self.last_hitter == "player":
-            print("revert")
+            print("revert player")
             paddle_speed = paddle_speed
         elif self.random_power_up == "powerup_speed_up_yourself" and self.is_in_range() and self.last_hitter == "ai":
-            print("speed up")
+            print("speed up ai")
             paddle_speed += 5
         if self.ai_y + self.paddle_height / 2 < self.ball_y:
             self.ai_y += paddle_speed
         elif self.ai_y + self.paddle_height / 2 > self.ball_y:
             self.ai_y -= paddle_speed
-        print(f"padde_speed_ai: {paddle_speed}")
     
     def ball_collision(self):
         if self.ball_y <= 0 or self.ball_y >= self.height:
@@ -117,7 +163,7 @@ class PongGame:
         if self.ball_x <= 20 and self.player1_y < self.ball_y < self.player1_y + self.paddle_height:
             self.last_hitter = "player"
             self.ball_speed_x = -self.ball_speed_x * self.ball_speed_factor
-        if self.ball_x >= self.width - 20 and self.ai_y < self.ball_y < self.ai_y + self.paddle_height:
+        if self.ball_x >= self.width - 20 and self.ai_y < self.ball_y < self.ai_y + self.paddle_height or self.is_multiplayer and self.ball_x >= self.width - 20 and self.player2_y < self.ball_y < self.player2_y + self.paddle_height:
             if self.is_multiplayer:
                 self.last_hitter = "player2"
             else:
@@ -127,16 +173,14 @@ class PongGame:
 
     def move_player(self, direction):
         paddle_speed = self.paddle_speed
-        # print(f"padde_speed: {paddle_speed}")
-        print(f"player1_y: {self.player1_y}")
         if self.random_power_up == "powerup_speed_up_yourself" and self.is_in_range() and self.last_hitter == "player":
-            print("speed up")
+            print("speed up player")
             paddle_speed += 3
         elif self.random_power_up == "powerup_revert_opponent_controls" and self.is_in_range() and self.last_hitter == "ai":
-            print("revert")
+            print("revert ai")
             paddle_speed = -paddle_speed
         elif self.random_power_up == "powerup_slow_down_opponent" and self.is_in_range(threshold=900) and self.last_hitter == "ai":
-            print("slow down")
+            print("slow down ai")
             paddle_speed -= 3
         if direction == "up" and self.player1_y > 0:
             self.player1_y -= paddle_speed
@@ -170,10 +214,10 @@ class PongGame:
     def reset_ball(self):
         self.ball_x = self.width / 2
         self.ball_y = self.height / 2
-        self.ball_speed_x = 7
-        self.ball_speed_y = 7
+        self.ball_speed_x = 2.5
+        self.ball_speed_y = 2.5
         self.random_power_up = None
     
     def end_game(self):
-        if self.opp_score == 3 or self.player_score == 3:
+        if self.opp_score == 5 or self.player_score == 5:
             self.is_game_over = True

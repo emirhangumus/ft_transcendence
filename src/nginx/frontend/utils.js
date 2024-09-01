@@ -58,10 +58,14 @@ function parseRoutes(routes) {
 }
 
 function getEndpoint(routes, path) {
+  // Split the path into route path and query parameters
+  const [routePath, queryString] = path.split('?');
+  const queryParams = new URLSearchParams(queryString);
+
   for (const [routePattern, config] of Object.entries(routes)) {
       // Split the route pattern and path into parts
       const routeParts = routePattern.split('/').filter(Boolean);
-      const pathParts = path.split('/').filter(Boolean);
+      const pathParts = routePath.split('/').filter(Boolean);
 
       // Check if the path length matches the route length
       if (routeParts.length !== pathParts.length) continue;
@@ -83,7 +87,7 @@ function getEndpoint(routes, path) {
               const variableLength = parseInt(length, 10);
               
               // Validate the length of the variable
-              if (pathPart.length !== variableLength) {
+              if (variableLength && pathPart.length !== variableLength) {
                   isMatch = false;
                   break;
               }
@@ -97,13 +101,25 @@ function getEndpoint(routes, path) {
       }
 
       if (isMatch) {
-          // Replace variables in the endpoint with actual values
-          let endpoint = config.endpoint;
-          Object.keys(variables).forEach(name => {
-              endpoint = endpoint.replace(`:${name}`, variables[name]);
-          });
+          // Check if the config includes query parameters and validate them
+          if (config.queryParams) {
+              for (const [key, value] of Object.entries(config.queryParams)) {
+                  if (queryParams.get(key) !== value) {
+                      isMatch = false;
+                      break;
+                  }
+              }
+          }
 
-          return endpoint;
+          if (isMatch) {
+              // Replace variables in the endpoint with actual values
+              let endpoint = config.endpoint;
+              Object.keys(variables).forEach(name => {
+                  endpoint = endpoint.replace(`:${name}`, variables[name]);
+              });
+
+              return endpoint;
+          }
       }
   }
 

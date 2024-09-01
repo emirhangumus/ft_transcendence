@@ -79,6 +79,26 @@ class Friendships(models.Model):
     class Meta:
         db_table = 'friendships'
 
+class Tournaments(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    tournament_id = models.CharField(
+        max_length=6,
+        validators=[MaxLengthValidator(6)],
+        null=False,
+        blank=False
+    )
+    name = models.TextField()
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='tournament_created_set')
+    winner = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, blank=True, null=True, related_name='tournament_winner_set')
+    player_amount = models.IntegerField()
+    who_joined = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='tournament_joined_set')
+    status = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'tournaments'
+
 class GameRecords(models.Model):
     id = models.BigAutoField(primary_key=True)
     game_id = models.CharField(
@@ -91,6 +111,7 @@ class GameRecords(models.Model):
     player2_score = models.IntegerField()
     winner_id = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, blank=True, null=True)
     total_match_time = models.IntegerField()
+    tournament_id = models.ForeignKey(Tournaments, models.DO_NOTHING, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

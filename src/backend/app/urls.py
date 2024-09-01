@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView
+from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView
 from . import consumers
 
 urlpatterns = [
@@ -12,13 +12,15 @@ urlpatterns = [
 
     path('friend/', FriendsView.as_view(), name='friends'),
     
-    # path("chat/ws/", consumers.ChatConsumer, name='chat_ws'),
     path('chat/', ChatView.as_view(), name='chat'),
     path('chat/new/', ChatCreateView.as_view(), name='new_chat'),
     path('chat/<str:chat_id>/', ChatView.as_view(), name='chat_room'),
-    # path("api/v1/chat/AE2IPE/ws/", consumers.ChatConsumer.as_asgi(), name='chat_ws'),
-    # path('ws/chat/<str:chat_id>/', consumers.ChatConsumer),
+
     path('play/', GameView.as_view(), name='play'),
     path('game/create/', GameCreateView.as_view(), name='create_game'),
     path('game/<str:game_id>/', GamePlayView.as_view(), name='game'),
+    
+    path('tournament/', TournamentView.as_view(), name='tournament'),
+    path('tournament/new/', TournamentCreateView.as_view(), name='create_tournament'),
+    path('tournament/<str:tournament_id>/', TournamentView.as_view(), name='tournament_room'),
 ]

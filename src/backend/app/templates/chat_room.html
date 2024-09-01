@@ -43,7 +43,7 @@
     };
 
     chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
+        console.log('Chat socket closed');
     };
 
     document.getElementById('chat-message-submit').onclick = function(e) {
@@ -56,5 +56,9 @@
         }));
         messageInputDom.value = '';
     };
+
+    cleanupFunctions.push(() => {
+        chatSocket.close();
+    });
 }
 </script>

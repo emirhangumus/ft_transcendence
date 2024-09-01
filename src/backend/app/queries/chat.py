@@ -7,7 +7,7 @@ def assignChatbotRoom(userId):
     BOT_ID = 1
     chatbot = User.objects.get(id=BOT_ID)
     chatroom = ChatRooms.objects.create(
-        chat_id=generateRandomID('chatroom'),
+        chat_id=generateRandomID('chatrooms'),
         name='chat.botRoom',
         can_leave=False
     )
@@ -57,7 +57,7 @@ def createChatRoom(name, createdUser, users):
             return None
         userObjects.append(u)
     
-    chatRoom = ChatRooms(name=name, chat_id=generateRandomID('chatroom'), can_leave=True)
+    chatRoom = ChatRooms(name=name, chat_id=generateRandomID('chatrooms'), can_leave=True)
     chatRoom.save()
     ChatUsers(user=createdUser, room=chatRoom).save()
     for user in userObjects:

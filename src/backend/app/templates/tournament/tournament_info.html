@@ -1,0 +1,33 @@
+<div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4">
+    <p class="font-bold">{{ tournament.name }}</p>
+</div>
+<div>
+    <input type="hidden" id="tournamentID" value="{{ tournament.tournament_id}}">
+    <button id="start-tournament" class="block w-full mt-4 p-2 bg-blue-500 text-white rounded">Start Tournament</button>
+</div>
+<script>
+{
+    const tournamentID = document.getElementById('tournamentID').value;
+    
+    const chatSocket = new WebSocket(
+        'wss://'
+        + window.location.host
+        + '/api/v1/tournament/'
+        + tournamentID
+        + '/ws/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log(data);
+    };
+
+    chatSocket.onclose = function(e) {
+        console.log('Leaved from tournament (socket closed)');
+    };
+
+    cleanupFunctions.push(() => {
+        chatSocket.close();
+    });
+}
+</script>

@@ -1,25 +1,22 @@
 from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer
+from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer, TournamentSerializer
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import render
 from django.template.response import TemplateResponse
 from .utils import genResponse, generateRandomID
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers
+from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments
 from .queries.friend import getFriendState, getFriends
 from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom
 import os
 from .jwt import PingPongObtainPairSerializer
 from django.conf import settings
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import HttpResponse, Http404
 from .logic import PongGame
-import threading
-import time
-from .consumers import game_rooms, notificationManager
+from .consumers import game_rooms, notificationManager, tournamentManager
 
 # Create your views here.
 def serve_dynamic_image(request, filename):
@@ -229,33 +226,56 @@ class GameCreateView(APIView):
                 })
 
                 game_rooms['game_' + game_id] = {
-                    'game': PongGame(data),
+                    'game': None,
                     'player1': None,
                     'player2': None
                 }
+                game_rooms['game_' + game_id]['game'] = PongGame(data, game_id)
                 return Response(genResponse(True, "Game created successfully", { "game_id": game_id }), status=status.HTTP_201_CREATED)
-                # game = PongGame(data)
-                # t = threading.Thread(target=self.gameTread, daemon=True, args=[game])
-                # t.start()
-                # if (self.game.is_game_over):
-                #     t.join()
-                # return JsonResponse({
-                #     "data": {
-                #         "ball_x": self.game.ball_x,
-                #         "ball_y": self.game.ball_y,
-                #         "player_y": self.game.player_y,
-                #         "ai_y": self.game.ai_y,
-                #         "is_game_over": self.game.is_game_over,
-                #         "player_score": self.game.player_score,
-                #         "opp_score": self.game.opp_score,
-                #         "ball_color": data["ball_color"],
-                #         "background_color": data["background_color"],
-                #     }
-                # })
             else:
                 response = genResponse(False, "Invalid data", serilizer.errors)
                 return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
+        except Exception as e:
+            response = genResponse(False, str(e), None)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+class TournamentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, tournament_id=None):
+        tournaments = Tournaments.objects.all()
+        if (tournament_id):
+            tournament = Tournaments.objects.filter(tournament_id=tournament_id).first()
+            if tournament:
+                return TemplateResponse(request, 'tournament/tournament.html', {'tournament': tournament, 'tournaments': tournaments })
+        return TemplateResponse(request, 'tournament/tournament.html', {'tournaments': tournaments})
+    
+class TournamentCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return TemplateResponse(request, 'tournament/tournament_create.html')
+    
+    def post(self, request):
+        try:
+            data = request.data
+            user = request.user
+            tournament_serializer = TournamentSerializer(data=data['tournament'])
+            game_serializer = GameCreationSerilizer(data=data['game'])
+            if not tournament_serializer.is_valid() or not game_serializer.is_valid():
+                print(tournament_serializer.errors)
+                print(game_serializer.errors)
+                response = genResponse(False, "Invalid data", tournament_serializer.errors)
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            tournament_data = tournament_serializer.validated_data
+            game_data = game_serializer.validated_data
+            tournament_id = generateRandomID('tournaments')
+            created_user = User.objects.get(id=user.id)
+            tournament = Tournaments.objects.create(tournament_id=tournament_id, created_by=created_user, name=tournament_data['name'], player_amount=tournament_data['player_amount'], status='pending')
+            tournamentManager.add_tournament(tournament_id)
+            response = genResponse(True, "Tournament created successfully", { "tournament_id": tournament_id })
+            return Response(response, status=status.HTTP_201_CREATED)
         except Exception as e:
             response = genResponse(False, str(e), None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
