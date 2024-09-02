@@ -292,7 +292,10 @@ class TournamentConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        print(data)
+        if data['type'] == 'start_tournament':
+            user = await self.get_user(self.user_id)
+            tournamentManager.start_tournament(self.tournament_id, user)
+            
     
     @sync_to_async
     def get_user(self, user_id):

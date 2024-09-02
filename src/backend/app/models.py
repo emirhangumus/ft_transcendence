@@ -6,7 +6,7 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator
 class Accounts(models.Model):
     id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, unique=True)
     bio = models.TextField(default='')
-    profile_picture_url = models.TextField(default='/static/images/default_profile_picture.png')
+    profile_picture_url = models.TextField(default='/static/images/register_cat.png')
     status = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

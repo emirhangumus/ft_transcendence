@@ -39,6 +39,12 @@ const ROUTES = parseRoutes({
     '/tournament/new': {
         endpoint: '/api/v1/tournament/new'
     },
+    '/profile': {
+        endpoint: '/api/v1/profile'
+    },
+    '/profile/edit': {
+        endpoint: '/api/v1/profile/edit'
+    },
 });
 
 const openedSockets = {};

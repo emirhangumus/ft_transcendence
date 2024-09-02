@@ -1,6 +1,7 @@
-<div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4">
+<div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4 mb-8">
     <p class="font-bold">{{ tournament.name }}</p>
 </div>
+<div class="grid grid-cols-2 gap-8 h-full w-full" id="playersInTournament"></div>
 <div>
     <input type="hidden" id="tournamentID" value="{{ tournament.tournament_id}}">
     <button id="start-tournament" class="block w-full mt-4 p-2 bg-blue-500 text-white rounded">Start Tournament</button>
@@ -8,7 +9,8 @@
 <script>
 {
     const tournamentID = document.getElementById('tournamentID').value;
-    
+    const playersInTournament = document.getElementById('playersInTournament');
+
     const chatSocket = new WebSocket(
         'wss://'
         + window.location.host
@@ -19,7 +21,20 @@
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        console.log(data);
+        if (data.type == 'player_addition') {
+            const players = data.players;
+            playersInTournament.innerHTML = '';
+            players.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.classList.add('bg-white', 'border', 'border-[#e0e0e0]', 'rounded-md', 'p-4', 'h-min');
+                playerDiv.innerHTML = `<p>${player.name}${player.is_owner ? ' (Owner)' : ''}</p>`;
+                playersInTournament.appendChild(playerDiv);
+            });
+        } else if (data.type == 'player_removal') {
+            console.log('Player removed');
+        } else if (data.type == 'tournament_start') {
+            console.log('Tournament started');
+        }
     };
 
     chatSocket.onclose = function(e) {

@@ -3,6 +3,11 @@ from django.contrib.auth.models import User
 from .models import Accounts, ChatMessages, ChatRooms, ChatUsers
 from .queries.chat import assignChatbotRoom
 
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Accounts
+        fields = ['bio', 'profile_picture_url', 'status', 'updated_at', 'created_at']
+
 class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=30, required=True)
     last_name = serializers.CharField(max_length=30, required=True)

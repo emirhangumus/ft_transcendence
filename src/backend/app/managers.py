@@ -4,6 +4,7 @@ import asyncio
 from .utils import threaded, synchronized_method
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
+import random
 
 class NotificationManager:
     types = ['normal', 'friend_request', 'match_invite', 'match_result']
@@ -117,26 +118,102 @@ class NotificationManager:
 class Tournament:
     started = False
     game_started = False
+    notify_players_for_user_change = False
+    tournament_owner = None
+    tournament_id = None
+    tournament_deleted = False
+    
+    fixtures = []
     
     def __init__(self, players, manager):
         self.players = players
         self.manager = manager
         
-    def start(self):
+    def start(self, tournament_id=None):
         if self.started:
             return
         if not self.started:
             self.started = True
+        self.tournament_id = tournament_id
         self.__start()
         
     @threaded
     def __start(self):
+        asyncio.run(self.__init_tournament())
         while True:
+            if self.tournament_deleted:
+                break
             asyncio.run(self.__process())
-    
+            if self.tournament_deleted:
+                break
+        if self.tournament_deleted:
+            asyncio.run(self.remove_tournament(self.tournament_id))
+            
+    async def __init_tournament(self):
+        pass
+        
     async def __process(self):
+        if self.game_started:
+            if (len(self.fixtures) == 0):
+                # prepare the fixtures
+                await self.__prepare_fixtures()
+        else:
+            await self.__tournament_ownership()
+            if self.tournament_deleted:
+                return
+            await self.__send_player()
+            if self.tournament_deleted:
+                return
+        await asyncio.sleep(0.2)
+    
+    async def __prepare_fixtures(self):
+        # prepare the fixtures. If the number of players is odd
+        self.fixtures = []
+        
+        random_players = list(self.players.keys())
+        random.shuffle(random_players)
+        
+        section_number = len(random_players) // 2
+        
+        
         pass
     
+    async def __tournament_ownership(self):
+        if self.tournament_owner is None:
+            tournament = await self.get_tournament(self.tournament_id)
+            
+            # print all the data in the tournament
+            if tournament is None:
+                self.tournament_deleted = True
+                return
+
+            self.tournament_id = tournament.tournament_id
+            self.tournament_owner = await self.get_user(tournament.created_by_id)
+        # if the owner is not in the players, remove the tournament
+    
+    async def __send_player(self):
+        if self.notify_players_for_user_change:
+            # if the leaved player is the owner, change the ownership
+            if self.tournament_owner.id not in self.players:
+                if len(self.players) > 0:
+                    # 0 is the first player
+                    player_id = list(self.players.keys())[0]
+                    await self.change_tournament_ownership(self.tournament_id, player_id)
+                    self.tournament_owner = await self.get_user(player_id)
+                    self.notify_players_for_user_change = True
+                        
+            # send the new player to all the players
+            for player_id in self.players:
+                await self.players[player_id]['channel'].send(text_data=json.dumps({
+                    'type': 'player_addition',
+                    'players': [{
+                        'id': i,
+                        'name': self.players[i]['player'].username,
+                        'is_owner': i == self.tournament_owner.id
+                    } for i in self.players]
+                }))
+            self.notify_players_for_user_change = False
+
     def add_player(self, player, channel):
         if player.id in self.players or self.game_started:
             return
@@ -144,10 +221,24 @@ class Tournament:
             'channel': channel,
             'player': player
         }
+        self.notify_players_for_user_change = True
     
     def remove_player(self, player):
         if player.id in self.players:
             del self.players[player.id]
+            # if the player is the last player, remove the tournament
+            if len(self.players) == 0:
+                self.tournament_deleted = True
+                return True
+            else:
+                self.notify_players_for_user_change = True
+                return False
+        return False
+    
+    def start_tournament(self, user):
+        if user.id != self.tournament_owner.id:
+            return
+        self.game_started = True
     
     def end(self):
         pass
@@ -155,16 +246,44 @@ class Tournament:
     def get_players(self):
         return self.players
     
+    @sync_to_async
+    def change_tournament_ownership(self, tournament_id, user_id):
+        if not Tournaments.objects.filter(tournament_id=tournament_id).exists():
+            return
+        user = User.objects.get(id=user_id)
+        tournament = Tournaments.objects.get(tournament_id=tournament_id)
+        tournament.created_by = user
+        tournament.save()
+    
+    @sync_to_async
+    def get_tournament(self, tournament_id):
+        if not Tournaments.objects.filter(tournament_id=tournament_id).exists():
+            return None
+        return Tournaments.objects.get(tournament_id=tournament_id)
+
+    @sync_to_async
+    def remove_tournament(self, tournament_id):
+        if not Tournaments.objects.filter(tournament_id=tournament_id).exists():
+            return
+        tournament = Tournaments.objects.get(tournament_id=tournament_id)
+        tournament.delete()
+        self.tournament_deleted = True
+    
+    @sync_to_async
+    def get_user(self, user_id):
+        return User.objects.get(id=user_id)
+    
 class TournamentManager:
     tournaments = {}
     started = False
+    started_tournaments = []
     
     def __init__(self):
         self.tournaments = {}
+        self.started_tournaments = []
 
     def add_tournament(self, tournament_id):
         self.tournaments[tournament_id] = Tournament({}, self)
-        # self.tournaments[tournament_id].start()
         
     def add_player(self, tournament_id, player, channel):
         if tournament_id not in self.tournaments:
@@ -176,7 +295,9 @@ class TournamentManager:
     def remove_player(self, tournament_id, player):
         if tournament_id not in self.tournaments:
             return
-        self.tournaments[tournament_id].remove_player(player)
+        is_removed = self.tournaments[tournament_id].remove_player(player)
+        if is_removed:
+            del self.tournaments[tournament_id]
     
     def start(self):
         if self.started:
@@ -192,16 +313,22 @@ class TournamentManager:
             asyncio.run(self.__process())
         
     async def __process(self):
-        # for tournament_id in self.tournaments:
-            # await self.tournaments[tournament_id].__process()
+        for tournament_id in self.tournaments:
+            if tournament_id not in self.started_tournaments:
+                self.tournaments[tournament_id].start(tournament_id)
+                self.started_tournaments.append(tournament_id)
         await asyncio.sleep(0.2)
     
     async def initial_up(self):
         tournaments = list(await self.get_pending_tournaments())
         for tournament in tournaments:
             self.tournaments[tournament.tournament_id] = Tournament({}, self)
-            self.tournaments[tournament.tournament_id].start()
-        print(self.tournaments)
+            self.tournaments[tournament.tournament_id].start(tournament.tournament_id)
+            
+    async def start_tournament(self, tournament_id, user):
+        if tournament_id not in self.tournaments:
+            return
+        self.tournaments[tournament_id].start_tournament(user)
 
     @sync_to_async
     def get_pending_tournaments(self):

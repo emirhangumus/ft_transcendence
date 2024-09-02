@@ -1,14 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer, TournamentSerializer
+from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer, TournamentSerializer, AccountSerializer
 from rest_framework.response import Response
 from rest_framework import status
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.template.response import TemplateResponse
 from .utils import genResponse, generateRandomID
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments
+from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts
 from .queries.friend import getFriendState, getFriends
 from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom
 import os
@@ -17,6 +17,10 @@ from django.conf import settings
 from django.http import HttpResponse, Http404
 from .logic import PongGame
 from .consumers import game_rooms, notificationManager, tournamentManager
+from django.views.generic import UpdateView
+from django.urls import reverse_lazy
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 # Create your views here.
 def serve_dynamic_image(request, filename):
@@ -29,6 +33,57 @@ def serve_dynamic_image(request, filename):
             return HttpResponse(f.read(), content_type="image/jpeg")
     else:
         raise Http404("Image not found")
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        account = get_object_or_404(Accounts, id=user)
+        serializer = AccountSerializer(account)
+        context = {'account': serializer.data}
+        
+        return TemplateResponse(request, 'profile.html', context)
+    
+class EditProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser]
+
+    def get(self, request):
+        user = request.user
+        account = get_object_or_404(Accounts, id=user)
+        serializer = AccountSerializer(instance=account)
+        context = {
+            'form': serializer,
+            'username': user.username,
+        }
+        return TemplateResponse(request, 'edit_profile.html', context)
+
+    def post(self, request):
+        try:
+            user = request.user
+            account = get_object_or_404(Accounts, id=user)
+            serializer = AccountSerializer(instance=account, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                response = {
+                    "success": True,
+                    "message": "Profile updated successfully"
+                }
+                return Response(response, status=status.HTTP_200_OK)
+            response = {
+                "success": False,
+                "message": "Profile update failed",
+                "errors": serializer.errors
+            }
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            response = {
+                "success": False,
+                "message": str(e)
+            }
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class HomeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -272,6 +327,9 @@ class TournamentCreateView(APIView):
             game_data = game_serializer.validated_data
             tournament_id = generateRandomID('tournaments')
             created_user = User.objects.get(id=user.id)
+            print(tournament_data)
+            print(tournament_data['name'])
+            print(tournament_data['player_amount'])
             tournament = Tournaments.objects.create(tournament_id=tournament_id, created_by=created_user, name=tournament_data['name'], player_amount=tournament_data['player_amount'], status='pending')
             tournamentManager.add_tournament(tournament_id)
             response = genResponse(True, "Tournament created successfully", { "tournament_id": tournament_id })

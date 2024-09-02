@@ -27,6 +27,7 @@ class PongGame:
         self.ball_speed_x = 2.5
         self.ball_speed_y = 2.5
         self.ball_speed_factor = 1.1
+        self.y_angle = 0
         self.paddle_height = 100
         self.player1_y = self.height // 2 - self.paddle_height // 2
         self.player2_y = self.height // 2 - self.paddle_height // 2
@@ -74,7 +75,7 @@ class PongGame:
             }
         }
     
-    @threaded 
+    @threaded
     def start(self):
         self.started = True
         while not self.is_game_over and not self.stoped:
@@ -148,7 +149,11 @@ class PongGame:
         elif self.ai_y + self.paddle_height / 2 > self.ball_y:
             self.ai_y -= paddle_speed
     
+    # def ball_hit_place(self):
+        # pass
+
     def ball_collision(self):
+        # self.ball_hit_place()
         if self.ball_y <= 0 or self.ball_y >= self.height:
             self.ball_speed_y = -self.ball_speed_y
         if self.ball_x <= 0 or self.ball_x >= self.width:
@@ -162,12 +167,16 @@ class PongGame:
     def paddle_collision(self):
         if self.ball_x <= 20 and self.player1_y < self.ball_y < self.player1_y + self.paddle_height:
             self.last_hitter = "player"
+            self.y_angle = (self.player1_y + self.paddle_height / 2 - self.ball_y) / self.paddle_height
+            self.ball_speed_y = self.y_angle * 10
             self.ball_speed_x = -self.ball_speed_x * self.ball_speed_factor
         if self.ball_x >= self.width - 20 and self.ai_y < self.ball_y < self.ai_y + self.paddle_height or self.is_multiplayer and self.ball_x >= self.width - 20 and self.player2_y < self.ball_y < self.player2_y + self.paddle_height:
             if self.is_multiplayer:
                 self.last_hitter = "player2"
             else:
                 self.last_hitter = "ai"
+            self.y_angle = (self.ai_y + self.paddle_height / 2 - self.ball_y) / self.paddle_height
+            self.ball_speed_y = self.y_angle * 10
             self.ball_speed_x = -self.ball_speed_x * self.ball_speed_factor
 
 

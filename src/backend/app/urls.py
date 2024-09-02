@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView
+from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView, ProfileView, EditProfileView
 from . import consumers
 
 urlpatterns = [
@@ -9,6 +9,9 @@ urlpatterns = [
     path('', HomeView.as_view(), name='home'),
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/', LoginView.as_view(), name='login'),
+
+    path('profile/', ProfileView.as_view(), name='profile'),
+    path('profile/edit/', EditProfileView.as_view(), name='edit_profile'),
 
     path('friend/', FriendsView.as_view(), name='friends'),
     
