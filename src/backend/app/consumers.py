@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 import json
-from .models import ChatRooms, ChatMessages, ChatUsers, Notifications
+from .models import ChatRooms, ChatMessages, ChatUsers, Notifications, GameRecords
 from django.contrib.auth.models import User
 import time
 import asyncio
@@ -41,7 +41,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             user_room_pairs[self.room_group_name].append(user_data['user_id'])
 
             messages = await self.get_previous_messages(self.chat_id)
-            print("oooo->" ,user_room_pairs)
             if messages:
                 for message in messages:
                     username = await self.get_username(message.sender_id)
@@ -75,8 +74,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             users_that_are_in_chat = await self.get_users_in_chat(self.chat_id)
             for chat_user in users_that_are_in_chat:
                 if chat_user['user_id'] != user.id and not self.is_user_in_channel(chat_user['user_id']):
-                    print("->", user_room_pairs)
-                    print("->", self.is_user_in_channel(chat_user['user_id']))
                     notificationManager.add_notification(chat_user['user_id'], f'{user.username} sent a message to chat {self.chat_id}')
             if user and message_obj:
                 await self.channel_layer.group_send(
@@ -131,15 +128,17 @@ class GameConsumer(AsyncWebsocketConsumer):
         if user_data and user_data['valid']:
             self.game_id = self.scope['url_route']['kwargs']['game_id']
             self.room_group_name = f'game_{self.game_id}'
-
-            # if there is already two players in the room
-            print(game_rooms)
-            print(self.room_group_name)
+            
             if self.room_group_name not in game_rooms:
-                print("room exists")
+                print("game not found")
                 await self.close()
                 return
-            
+    
+            if game_rooms[self.room_group_name].get('player1') and game_rooms[self.room_group_name].get('player2'):
+                print("game is full")
+                await self.close()
+                return
+    
             if game_rooms.get(self.room_group_name) and not game_rooms[self.room_group_name].get('player1'):
                 game_rooms[self.room_group_name]['player1'] = {
                     'self': self,
@@ -149,7 +148,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game_rooms[self.room_group_name]['player2'] = {
                     'self': self,
                     'user': user_data
-                }
+                }   
 
             # Odaya katıl
             await self.channel_layer.group_add(
@@ -157,9 +156,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             
-            # game = PongGame(data)
-            # t = threading.Thread(target=self.gameTread, daemon=True, args=[game])
-
             await self.accept()
             asyncio.create_task(self.stream_data())
         else:
@@ -182,6 +178,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game_rooms[self.room_group_name]['game'].move_player2(data['direction'])
 
     async def stream_data(self):
+        report = None
         while True:
             current_time = time.time()
             # Generate or fetch your game data to stream
@@ -203,6 +200,12 @@ class GameConsumer(AsyncWebsocketConsumer):
                     'message': game_data
                 }
             )
+            
+            if not game_rooms[self.room_group_name]['game'].is_game_tournament():
+                report = game_rooms[self.room_group_name]['game'].get_final_report()
+                if report is not 'final_report_is_already_taken' and report is not 'game_is_not_over':
+                    print("report", report)
+                    break
 
             # Wait for a specific interval before sending the next update
             await asyncio.sleep(0.05)  # Adjust the interval as needed | 0.05 is 20 FPS
@@ -260,6 +263,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 is_read = False
             notifications = Notifications.objects.filter(receiver=user_id, is_read=is_read)
         return list(notifications)
+    
+    @sync_to_async
+    def save_the_finished_game(self, game_id, winner_id, report):
+        game = GameRecords.objects.get(id=game_id)
+        game.winner_id = winner_id
+        game.save()
 
 class TournamentConsumer(AsyncWebsocketConsumer):
     async def connect(self):

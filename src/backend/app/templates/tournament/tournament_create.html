@@ -101,6 +101,8 @@
         console.log(data);
         if (data.status) {
             setCurrentPath('/tournament/' + data.data.tournament_id);
+        } else {
+            alert(data.message);
         }
     });
 }

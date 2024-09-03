@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto mt-12">
+    <div class="bg-white border border-gray-200 rounded-md p-6">
+        <h1 class="text-2xl font-bold mb-4">{{ user.username }}'s Profile</h1>
+        <img src="{{ account.profile_picture_url }}" alt="Profile Picture" class="rounded-full w-32 h-32 mb-4">
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>First Name:</strong> {{ user.first_name }}</p>
+        <p><strong>Last Name:</strong> {{ user.last_name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Bio:</strong> {{ account.bio }}</p>
+        <p><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
+        <p><strong>Joined:</strong> {{ account.created_at }}</p>
+        <p><strong>Last Updated:</strong> {{ account.updated_at }}</p>
+
+         <!-- Game Statistics -->
+         <h2 class="text-xl font-bold mt-6">Games Records: {{ count }}</h2>
+         <ul>
+         {% for game in records %}
+             <li>
+                 <p>----------------------------------------------------------------------------------------</p>
+                 <p><strong>Game ID:</strong> {{ game.game_id }}</p>
+                 <p><strong>Player 1 Score:</strong> {{ game.player1_score }}</p>
+                 <p><strong>Player 2 Score:</strong> {{ game.player2_score }}</p>
+                 <!-- <p><strong>Winner:</strong> {{ game.winner_id }}</p> -->
+                 <p><strong>Winner:</strong> 
+                    {% if game.winner_id %}
+                        <a href="/profile/{{ game.winner_id }}" style="text-decoration: underline;">{{ game.winner_id }}</a>
+                    {% else %}
+                        None
+                    {% endif %}
+                </p>
+                 <p><strong>Total Match Time:</strong> {{ game.total_match_time }}</p>
+                 <p>----------------------------------------------------------------------------------------</p>
+             </li>
+         {% endfor %}
+         </ul>
+
+         <!-- Game Stats Chart -->
+         <h2 class="text-xl font-bold mt-6">Game Stats:</h2>
+         <img src="data:image/png;base64,{{ chart_image }}" alt="Game Stats Chart">
+ 
+    </div>
+</div>
+
+{% endblock %}

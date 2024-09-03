@@ -2,34 +2,36 @@
 
 {% block content %}
 <div class="max-w-4xl grid grid-cols-2 mx-auto border rounded p-4 shadow-md my-10 gap-8">
-	<form id="login-form" class="flex flex-col gap-8">
-		{% csrf_token %}
-		<h1 class="text-2xl font-semibold text-gray-800">
-			Login Account
-		</h1>
-		<div class="flex flex-col gap-4">
-			<div class="flex flex-col gap-2">
-				<label for="email" class="text-sm">
-					Email
-				</label>
-				<input type="email" id="email" name="email" required
-					class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+	<div class="flex flex-col gap-8">
+		<form id="login-form" class="flex flex-col gap-8">
+			{% csrf_token %}
+			<h1 class="text-2xl font-semibold text-gray-800">
+				Login Account
+			</h1>
+			<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-2">
+					<label for="email" class="text-sm">
+						Email
+					</label>
+					<input type="email" id="email" name="email" required
+						class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+				</div>
+				<div class="flex flex-col gap-2">
+					<label for="password" class="text-sm">
+						Password
+					</label>
+					<input type="password" id="password" name="password" required
+						class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+				</div>
 			</div>
-			<div class="flex flex-col gap-2">
-				<label for="password" class="text-sm">
-					Password
-				</label>
-				<input type="password" id="password" name="password" required
-					class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+			<div class="flex justify-end">
+				<button type="submit"
+					class="bg-blue-600 text-white py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition-all ease-in-out duration-300 px-4">
+					Login
+				</button>
 			</div>
-		</div>
-		<div class="flex justify-end">
-			<button type="submit"
-				class="bg-blue-600 text-white py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition-all ease-in-out duration-300 px-4">
-				Login
-			</button>
-		</div>
-	</form>
+		</form>
+	</div>
 	<img src="/api/v1/static/register_cat.jpg" alt="Cat" class="rounded object-cover">
 </div>
 

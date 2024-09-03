@@ -5,9 +5,11 @@ from .utils import threaded, synchronized_method
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
 import random
+import math
+from .queries.game import createGameRoom, addPlayerToGameRoom, updateGameRoom
 
 class NotificationManager:
-    types = ['normal', 'friend_request', 'match_invite', 'match_result']
+    types = ['normal', 'friend_request', 'match_invite', 'match_result', 'redirection']
     started = False
     
     def __init__(self):
@@ -38,7 +40,10 @@ class NotificationManager:
         if user_id in self.queue:
             del self.queue[user_id]
 
+    @synchronized_method
     def add_notification(self, user_id, message, payload={}, type='normal', add_to_db=False):
+        print('adding notification, ', user_id, message, payload, type, add_to_db)
+        print("Current queue: ", self.queue)
         if user_id in self.queue:
             self.queue[user_id].append({
                 'message': message,
@@ -53,6 +58,7 @@ class NotificationManager:
                 'type': type,
                 'add_to_db': add_to_db
             }]
+        print("After adding, ", self.queue)
     
     def start(self):
         if self.started:
@@ -70,8 +76,9 @@ class NotificationManager:
         for user_id in self.queue:
             for notification in self.queue[user_id]:
                 await self.__send_notification(user_id, notification['message'], notification['payload'], notification['type'], notification['add_to_db'])
-        self.queue = {}
-        await asyncio.sleep(0.5)
+                # remove the notification from the queue
+                self.queue[user_id].remove(notification)
+        await asyncio.sleep(1)
 
     async def mark_as_read_all(self, user_id):
         await self.mark_as_read_all_sync(user_id)
@@ -122,12 +129,20 @@ class Tournament:
     tournament_owner = None
     tournament_id = None
     tournament_deleted = False
+    tournament_ended = False
+
+    section_number = 0
+    prepare_fixtures = False
+    current_round = 0
+    current_available_players = []
     
     fixtures = []
+    is_report_taken = False
     
-    def __init__(self, players, manager):
+    def __init__(self, players, manager, game_data):
         self.players = players
         self.manager = manager
+        self.game_data = game_data
         
     def start(self, tournament_id=None):
         if self.started:
@@ -140,23 +155,43 @@ class Tournament:
     @threaded
     def __start(self):
         asyncio.run(self.__init_tournament())
-        while True:
-            if self.tournament_deleted:
+        while not self.tournament_ended or not self.tournament_deleted:
+            if self.tournament_deleted or self.tournament_ended:
                 break
             asyncio.run(self.__process())
-            if self.tournament_deleted:
+            if self.tournament_deleted or self.tournament_ended:
                 break
         if self.tournament_deleted:
             asyncio.run(self.remove_tournament(self.tournament_id))
-            
+        while not self.is_report_taken:
+            asyncio.run(self.__wait_for_report_take())
+
+    async def __wait_for_report_take(self):
+        await asyncio.sleep(0.2)
+        
+    def get_final_report(self):
+        if self.tournament_ended:
+            return {
+                'fixtures': self.fixtures,
+                'tournament_owner': self.tournament_owner,
+                'section_number': self.section_number,
+                'tournament_id': self.tournament_id,
+                'winner': self.fixtures[-1][0]['winner'],
+                'players': [i['player'] for i in self.players.values()]
+            }
+        return 'tournament_is_not_over'            
+    
     async def __init_tournament(self):
-        pass
+        tournament = await self.get_tournament(self.tournament_id)
+        self.section_number = math.ceil(math.log2(tournament.player_amount))
+        self.tournament_owner = await self.get_user(tournament.created_by_id)
+        self.fixtures = [[] for i in range(self.section_number)]
         
     async def __process(self):
         if self.game_started:
-            if (len(self.fixtures) == 0):
-                # prepare the fixtures
-                await self.__prepare_fixtures()
+            if self.prepare_fixtures:
+                await self.__prepare_fixtures(self.current_available_players, self.current_round)
+            await self.__is_all_games_finished()
         else:
             await self.__tournament_ownership()
             if self.tournament_deleted:
@@ -164,19 +199,100 @@ class Tournament:
             await self.__send_player()
             if self.tournament_deleted:
                 return
+        if self.tournament_ended:
+            return
         await asyncio.sleep(0.2)
     
-    async def __prepare_fixtures(self):
-        # prepare the fixtures. If the number of players is odd
-        self.fixtures = []
-        
-        random_players = list(self.players.keys())
+    async def __is_all_games_finished(self):
+        from .consumers import notificationManager, game_rooms
+
+        if self.prepare_fixtures:
+            return
+        for fixture in self.fixtures[self.current_round]:
+            result = fixture['game'].get_final_report()
+            if result == 'final_report_is_already_taken' or result == 'game_is_not_over':
+                continue
+            player1_score = result['player_score']
+            player2_score = result['opp_score']
+            total_match_time = result['total_match_time']
+            loser = None
+            winner = None
+            print(game_rooms['game_' + fixture['game_id']])
+            print(game_rooms['game_' + fixture['game_id']]['player1'])
+            if player1_score > player2_score:
+                winner = game_rooms['game_' + fixture['game_id']]['player1']['user']
+                loser = game_rooms['game_' + fixture['game_id']]['player2']['user']
+            else:
+                winner = game_rooms['game_' + fixture['game_id']]['player2']['user']
+                loser = game_rooms['game_' + fixture['game_id']]['player1']['user']
+            winner = await self.get_user(winner['user_id'])
+            loser = await self.get_user(loser['user_id'])
+            print("loser is ", loser)
+            notificationManager.add_notification(loser.id, 'You have lost the game, better luck next time', {"path": "/"}, 'redirection', False)
+            
+            fixture['game_result'] = {
+                'player1': fixture['player1'],
+                'player2': fixture['player2'],
+                'total_match_time': total_match_time,
+                'player1_score': player1_score,
+                'player2_score': player2_score,
+                'winner': winner
+            }
+            fixture['winner'] = winner
+            print(fixture)
+            await self.update_game_room(fixture['game_id'], player1_score, player2_score, winner, total_match_time)
+        if all([i['winner'] is not None for i in self.fixtures[self.current_round]]):
+            self.current_available_players = {i['winner'].id: i['winner'] for i in self.fixtures[self.current_round]}
+            self.current_round += 1
+            print(self.current_round, self.section_number, self.current_available_players)
+            if self.current_round == self.section_number:
+                self.end()
+                return
+            self.prepare_fixtures = True
+    
+    async def __prepare_fixtures(self, players, current_round):
+        from .logic import PongGame
+        from .consumers import game_rooms
+
+        random_players = list(players.keys())
         random.shuffle(random_players)
         
-        section_number = len(random_players) // 2
+        # initial the first round
+        i = 0
+        while i < len(random_players):
+            player1_id = random_players[i]
+            player2_id = random_players[i + 1]
+            player1 = await self.get_user(player1_id)
+            player2 = await self.get_user(player2_id)
+            game_id = await self._createGameRoom(self.game_data)
+            await self._addPlayerToGameRoom(game_id, player1)
+            await self._addPlayerToGameRoom(game_id, player2)
+            self.fixtures[current_round].append({
+                'player1': player1,
+                'player2': player2,
+                'winner': None,
+                'game': PongGame(self.game_data, game_id),
+                'game_result': None,
+                'game_id': game_id
+            })
+            game_rooms['game_' + game_id] = {
+                'game': None,
+                'player1': None,
+                'player2': None
+            }
+            game_rooms['game_' + game_id]['game'] = self.fixtures[current_round][-1]['game']
+            i += 2
+        self.prepare_fixtures = False
+        await self.__redirect_players_to_games()
         
-        
-        pass
+    async def __redirect_players_to_games(self):
+        for fixture in self.fixtures[self.current_round]:
+            for player in self.players:
+                if player == fixture['player1'].id or player == fixture['player2'].id:
+                    await self.players[player]['channel'].send(text_data=json.dumps({
+                        'type': 'game_redirect',
+                        'game_id': fixture['game_id']
+                    }))
     
     async def __tournament_ownership(self):
         if self.tournament_owner is None:
@@ -238,10 +354,12 @@ class Tournament:
     def start_tournament(self, user):
         if user.id != self.tournament_owner.id:
             return
+        self.prepare_fixtures = True
         self.game_started = True
+        self.current_available_players = self.players
     
     def end(self):
-        pass
+        self.tournament_ended = True
     
     def get_players(self):
         return self.players
@@ -273,6 +391,23 @@ class Tournament:
     def get_user(self, user_id):
         return User.objects.get(id=user_id)
     
+    @sync_to_async
+    def _createGameRoom(self, data):
+        return createGameRoom(data)
+    
+    @sync_to_async
+    def _addPlayerToGameRoom(self, game_id, player_id):
+        return addPlayerToGameRoom(game_id, player_id)
+    
+    @sync_to_async
+    def update_game_room(self, game_id, player1_score, player2_score, winner_id, total_match_time):
+        return updateGameRoom(game_id, {
+            'player1_score': player1_score,
+            'player2_score': player2_score,
+            'winner_id': winner_id,
+            'total_match_time': total_match_time
+        })
+    
 class TournamentManager:
     tournaments = {}
     started = False
@@ -282,8 +417,8 @@ class TournamentManager:
         self.tournaments = {}
         self.started_tournaments = []
 
-    def add_tournament(self, tournament_id):
-        self.tournaments[tournament_id] = Tournament({}, self)
+    def add_tournament(self, tournament_id, game_data):
+        self.tournaments[tournament_id] = Tournament({}, self, game_data)
         
     def add_player(self, tournament_id, player, channel):
         if tournament_id not in self.tournaments:
@@ -313,19 +448,38 @@ class TournamentManager:
             asyncio.run(self.__process())
         
     async def __process(self):
+        from .consumers import notificationManager
+        
         for tournament_id in self.tournaments:
             if tournament_id not in self.started_tournaments:
                 self.tournaments[tournament_id].start(tournament_id)
                 self.started_tournaments.append(tournament_id)
+        will_be_removed = []
+        for tournament_id in self.tournaments:
+            final_report = self.tournaments[tournament_id].get_final_report()
+            if final_report != 'tournament_is_not_over':
+                players = final_report['players']
+                for player in players:
+                    notificationManager.add_notification(player.id, 'Tournament has ended, the winner is ' + final_report['winner'].username, {
+                        'tournament_id': final_report['tournament_id'],
+                        'winner': final_report['winner'].username
+                    }, 'normal', True)
+                
+                await self.save_the_tournament(final_report)
+                
+                will_be_removed.append(tournament_id)
+                
+        for tournament_id in will_be_removed:
+            del self.tournaments[tournament_id]
         await asyncio.sleep(0.2)
     
     async def initial_up(self):
         tournaments = list(await self.get_pending_tournaments())
         for tournament in tournaments:
-            self.tournaments[tournament.tournament_id] = Tournament({}, self)
+            self.tournaments[tournament.tournament_id] = Tournament({}, self, tournament.game_settings)
             self.tournaments[tournament.tournament_id].start(tournament.tournament_id)
             
-    async def start_tournament(self, tournament_id, user):
+    def start_tournament(self, tournament_id, user):
         if tournament_id not in self.tournaments:
             return
         self.tournaments[tournament_id].start_tournament(user)
@@ -334,3 +488,14 @@ class TournamentManager:
     def get_pending_tournaments(self):
         t = Tournaments.objects.filter(status='pending')
         return [i for i in t]
+
+    @sync_to_async
+    def save_the_tournament(self, tournament):
+        t = Tournaments.objects.get(tournament_id=tournament['tournament_id'])
+        t.status = 'ended'
+        t.winner = tournament['winner']
+        t.save()
+        # save the who_joined
+        for player in tournament['players']:
+            t.who_joined.add(player)
+        t.save()

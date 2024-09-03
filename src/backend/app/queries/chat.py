@@ -45,7 +45,7 @@ def getChatMessages(roomId, limit):
     return chatMessages
 
 # `users` is a list of username
-def createChatRoom(name, createdUser, users):
+def createChatRoom(name, createdUser, users, can_leave=True):
     # check every user is friend with the createdUser
     userObjects = []
     for user in users:
@@ -57,10 +57,22 @@ def createChatRoom(name, createdUser, users):
             return None
         userObjects.append(u)
     
-    chatRoom = ChatRooms(name=name, chat_id=generateRandomID('chatrooms'), can_leave=True)
+    chatRoom = ChatRooms(name=name, chat_id=generateRandomID('chatrooms'), can_leave=can_leave)
     chatRoom.save()
     ChatUsers(user=createdUser, room=chatRoom).save()
     for user in userObjects:
         chatUser = ChatUsers(user=user, room=chatRoom)
         chatUser.save()
     return chatRoom
+
+def leaveChatRoom(roomId, userId):
+    chatRoom = ChatRooms.objects.filter(id=roomId).first()
+    if not chatRoom:
+        return False
+    chatUsers = ChatUsers.objects.filter(user=userId, room=chatRoom)
+    # remove user and if there is only one user left, delete the chat room
+    if chatUsers:
+        chatUsers.delete()
+        if ChatUsers.objects.filter(room=chatRoom).count() == 1:
+            chatRoom.delete()
+    return True

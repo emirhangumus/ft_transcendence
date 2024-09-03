@@ -41,7 +41,6 @@ def generateRandomID(lookup, length=6) -> str:
 def gameTread(self, game):
     while True:
         game.update()
-        print("thread")
         time.sleep(1)
         if game.end_game() or game.timeout():
             break
@@ -87,3 +86,6 @@ def synchronized_method(method):
                 return method(self, *args, **kws)  
 
     return sync_method
+
+def isValidUsername(username: str) -> bool:
+    return username.isalnum() and len(username) >= 4 and len(username) <= 30

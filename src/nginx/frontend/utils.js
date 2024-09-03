@@ -126,3 +126,24 @@ function getEndpoint(routes, path) {
   // Return false if no match is found
   return false;
 }
+
+function generateToast(message, title="", type) {
+  const toast = document.createElement('div');
+  const h1 = document.createElement('h1');
+  h1.classList.add('toast-title');
+  const p = document.createElement('p');
+  p.classList.add('toast-message');
+  toast.className = `toast toast-${type} toast-show`;
+  h1.textContent = title;
+  p.textContent = message;
+  toast.appendChild(h1);
+  toast.appendChild(p);
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('toast-hidden');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
+}

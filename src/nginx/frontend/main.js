@@ -45,6 +45,9 @@ const ROUTES = parseRoutes({
     '/profile/edit': {
         endpoint: '/api/v1/profile/edit'
     },
+    '/profile/:username': {
+        endpoint: '/api/v1/profile/:username'  // New route to view a profile by username
+    },
 });
 
 const openedSockets = {};
@@ -85,6 +88,10 @@ function makeScriptsExecutable() {
 function disableAllAnchorTags() {
     const anchorTags = document.getElementsByTagName("a");
     for (let i = 0; i < anchorTags.length; i++) {
+        if (anchorTags[i].getAttribute("data-dont-override")) {
+            continue;
+        }
+
         anchorTags[i].addEventListener("click", (e) => {
             e.preventDefault();
             const newPath = anchorTags[i].getAttribute("href");
@@ -146,14 +153,19 @@ function notificationFunc() {
             const notificationList = document.getElementById('notificationList');
             const data = JSON.parse(event.data);
             if (data.type == 'notifications') {
-                const el = document.createElement('li');
                 const no = data.notification;
+                if (no.type == 'redirection') {
+                    setCurrentPath(no.payload.path);
+                    return ;
+                }
+                const el = document.createElement('li');
                 if (no.type == 'normal') {
                     el.innerHTML = `<div>${no.message}</div>`;
                 }
 
                 notificationList.appendChild(el);
             }
+            
             console.log('WebSocket message received:', data);
         }
 
@@ -197,7 +209,12 @@ function setPage()
 
             try {
                 const json = JSON.parse(t);
-                if (json && json.code && json.code === 'token_not_valid') {
+                if (json && res.status == 401 && json.detail === 'Authentication credentials were not provided.') {
+                    deleteAllCookies();
+                    setCurrentPath('/login');
+                    return ;
+                }
+                else if (json && json.code && json.code === 'token_not_valid') {
                     if (MAX_TRIES === 0) {
                         deleteAllCookies();
                         setCurrentPath('/login');

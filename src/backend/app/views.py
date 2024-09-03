@@ -1,12 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.parsers import JSONParser
 from django.contrib.auth.models import User
-from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer, TournamentSerializer, AccountSerializer
+from .serializers import UserSerializer, LoginSerializer, FriendRequestActionsSerializer, GameCreationSerilizer, TournamentSerializer, AccountSerializer, GameRecordSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render, get_object_or_404
 from django.template.response import TemplateResponse
-from .utils import genResponse, generateRandomID
+from .utils import genResponse, generateRandomID, isValidUsername
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts
 from .queries.friend import getFriendState, getFriends
@@ -16,11 +16,9 @@ from .jwt import PingPongObtainPairSerializer
 from django.conf import settings
 from django.http import HttpResponse, Http404
 from .logic import PongGame
-from .consumers import game_rooms, notificationManager, tournamentManager
-from django.views.generic import UpdateView
-from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect
-from django.urls import reverse
+from .consumers import game_rooms, tournamentManager
+import requests
+from django.shortcuts import redirect
 
 # Create your views here.
 def serve_dynamic_image(request, filename):
@@ -42,9 +40,48 @@ class ProfileView(APIView):
         account = get_object_or_404(Accounts, id=user)
         serializer = AccountSerializer(account)
         context = {'account': serializer.data}
-        
         return TemplateResponse(request, 'profile.html', context)
     
+
+# class UserProfileView(APIView):
+#     permission_classes = [IsAuthenticated]  # Allow viewing profiles without authentication
+
+#     def get(self, request, username):
+#         user = get_object_or_404(User, username=username)
+#         account = get_object_or_404(Accounts, id=user)
+#         serializer = AccountSerializer(account)
+#         context = {
+#             'account': serializer.data,
+#             'user': user,
+#         }
+#         return TemplateResponse(request, 'user_profile.html', context)
+    
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]  # Allow viewing profiles without authentication
+
+    def get(self, request, username):
+        # Fetch the user and account based on the username
+        user = get_object_or_404(User, username=username)
+        account = get_object_or_404(Accounts, id=user)
+        
+        # Serialize the account information
+        account_serializer = AccountSerializer(account)
+        
+        # Fetch all game records where the user participated
+        game_players = GamePlayers.objects.filter(player_id=user)
+        game_records = GameRecords.objects.filter(id__in=game_players.values('game_record_id')).order_by('-created_at') 
+        game_count = game_records.count()
+
+        # Pass the serialized data to the template
+        context = {
+            'account': account_serializer.data,
+            'user': user,
+            'records': game_records,
+            'count': game_count,
+        }
+        
+        return TemplateResponse(request, 'user_profile.html', context)
+
 class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
@@ -62,37 +99,43 @@ class EditProfileView(APIView):
     def post(self, request):
         try:
             user = request.user
-            account = get_object_or_404(Accounts, id=user)
-            serializer = AccountSerializer(instance=account, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                response = {
-                    "success": True,
-                    "message": "Profile updated successfully"
-                }
-                return Response(response, status=status.HTTP_200_OK)
-            response = {
-                "success": False,
-                "message": "Profile update failed",
-                "errors": serializer.errors
-            }
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            user = User.objects.get(id=user.id)
+            account = Accounts.objects.get(id=user.id)
+            if request.data['username']:
+                if User.objects.filter(username=request.data['username']).exists() and request.data['username'] != user.username:
+                    raise Exception("Username already exists")
+                if not isValidUsername(request.data['username']):
+                    raise Exception("Invalid username")
+                user.username = request.data['username']
+            if request.data['email']:
+                if User.objects.filter(email=request.data['email']).exists() and request.data['email'] != user.email:
+                    raise Exception("Email already exists")
+                user.email = request.data['email']
+            if request.data['first_name']:
+                user.first_name = request.data['first_name']
+            if request.data['last_name']:
+                user.last_name = request.data['last_name']
+            user.save()
+            if request.data['bio']:
+                account.bio = request.data['bio']
+            if request.data['profile_picture_url']:
+                account.profile_picture_url = request.data['profile_picture_url']
+            account.save()
+            response = genResponse(True, "Profile updated successfully", None)
+            return Response(response, status=status.HTTP_200_OK)
         except Exception as e:
-            response = {
-                "success": False,
-                "message": str(e)
-            }
+            response = genResponse(False, str(e), None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 class HomeView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         
         user = request.user
+        user = User.objects.get(id=user.id)
         friend_dict = getFriendState(user)
-        
-        return TemplateResponse(request, 'home.html', {} | friend_dict)
+        return TemplateResponse(request, 'home.html', {} | friend_dict | { "user": user })
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -186,7 +229,6 @@ class FriendsView(APIView):
     def patch(self, request):
         try:
             user = request.user
-            print("suprise ", user)
             data = {
                 'action': request.query_params['action'],
                 'username': request.query_params['username']
@@ -228,7 +270,6 @@ class ChatCreateView(APIView):
     
     def get(self, request):
         friend_dict = getFriends(request.user)
-        print(friend_dict)
         return TemplateResponse(request, 'chat_create.html', {'friends': friend_dict})
 
     def post(self, request):
@@ -299,7 +340,7 @@ class TournamentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, tournament_id=None):
-        tournaments = Tournaments.objects.all()
+        tournaments = Tournaments.objects.filter(status='pending')
         if (tournament_id):
             tournament = Tournaments.objects.filter(tournament_id=tournament_id).first()
             if tournament:
@@ -318,20 +359,18 @@ class TournamentCreateView(APIView):
             user = request.user
             tournament_serializer = TournamentSerializer(data=data['tournament'])
             game_serializer = GameCreationSerilizer(data=data['game'])
-            if not tournament_serializer.is_valid() or not game_serializer.is_valid():
-                print(tournament_serializer.errors)
-                print(game_serializer.errors)
-                response = genResponse(False, "Invalid data", tournament_serializer.errors)
+            if not tournament_serializer.is_valid():
+                response = genResponse(False, "Invalid tournament data", tournament_serializer.errors)
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            if not game_serializer.is_valid():
+                response = genResponse(False, "Invalid game data", game_serializer.errors)
                 return Response(response, status=status.HTTP_400_BAD_REQUEST)
             tournament_data = tournament_serializer.validated_data
             game_data = game_serializer.validated_data
             tournament_id = generateRandomID('tournaments')
             created_user = User.objects.get(id=user.id)
-            print(tournament_data)
-            print(tournament_data['name'])
-            print(tournament_data['player_amount'])
-            tournament = Tournaments.objects.create(tournament_id=tournament_id, created_by=created_user, name=tournament_data['name'], player_amount=tournament_data['player_amount'], status='pending')
-            tournamentManager.add_tournament(tournament_id)
+            tournament = Tournaments.objects.create(tournament_id=tournament_id, created_by=created_user, name=tournament_data['name'], player_amount=tournament_data['player_amount'], status='pending', game_settings=game_data)
+            tournamentManager.add_tournament(tournament_id, game_data)
             response = genResponse(True, "Tournament created successfully", { "tournament_id": tournament_id })
             return Response(response, status=status.HTTP_201_CREATED)
         except Exception as e:

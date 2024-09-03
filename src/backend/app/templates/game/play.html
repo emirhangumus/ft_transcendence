@@ -8,13 +8,16 @@
         border: 1px solid black;
     }
 </style>
-<canvas id="gameCanvas" width="0" height="0"></canvas>
+<div class="grid place-items-center mt-16">
+    <canvas id="gameCanvas" width="0" height="0"></canvas>
+</div>
 <script>
     {
         let gameState = 'waiting_for_players';
         const PADDLE_HEIGHT = 100;
         let canvasWidth = -1;
         let canvasHeight = -1;
+        const DECORATIVE_LINE_WIDTH = 5;
 
         const body = document.querySelector('body');
         body.style.overflow = 'hidden';
@@ -29,31 +32,91 @@
             + '/ws/'
         );
 
+        function renderGameDecorativeLines()
+        {
+            if (canvasWidth === -1 || canvasHeight === -1) {
+                return;
+            }
+
+            ctx.fillStyle = '#78716c';
+
+            // Draw the middle line
+            for (let i = 0; i < canvasHeight; i += 40) {
+                // use the DECORATIVE_LINE_WIDTH variable to draw the line
+                ctx.fillRect(canvasWidth / 2 - DECORATIVE_LINE_WIDTH / 2, i, DECORATIVE_LINE_WIDTH, 20);
+            }
+
+            // Draw the top line
+            for (let i = 0; i < canvasWidth; i += 40) {
+                // use the DECORATIVE_LINE_WIDTH variable to draw the line
+                ctx.fillRect(i, 0, 20, DECORATIVE_LINE_WIDTH);
+            }
+
+            // Draw the bottom line
+            for (let i = 0; i < canvasWidth; i += 40) {
+                // use the DECORATIVE_LINE_WIDTH variable to draw the line
+                ctx.fillRect(i, canvasHeight - DECORATIVE_LINE_WIDTH, 20, DECORATIVE_LINE_WIDTH);
+            }
+
+            // Draw the left line
+            for (let i = 0; i < canvasHeight; i += 40) {
+                // use the DECORATIVE_LINE_WIDTH variable to draw the line
+                ctx.fillRect(0, i, DECORATIVE_LINE_WIDTH, 20);
+            }
+
+            // Draw the right line
+            for (let i = 0; i < canvasHeight; i += 40) {
+                // use the DECORATIVE_LINE_WIDTH variable to draw the line
+                ctx.fillRect(canvasWidth - DECORATIVE_LINE_WIDTH, i, DECORATIVE_LINE_WIDTH, 20);
+            }
+
+            // Draw the top left corner
+            ctx.fillRect(0, 0, 20, 20);
+
+            // Draw the top right corner
+            ctx.fillRect(canvasWidth - 20, 0, 20, 20);
+
+            // Draw the bottom left corner
+            ctx.fillRect(0, canvasHeight - 20, 20, 20);
+
+            // Draw the bottom right corner
+            ctx.fillRect(canvasWidth - 20, canvasHeight - 20, 20, 20);
+
+            // Draw the middle circle
+            ctx.beginPath();
+            ctx.arc(canvasWidth / 2, canvasHeight / 2, 100, 0, 2 * Math.PI);
+            ctx.stroke();
+        } 
+
         function gameRenderScreen(data) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ctx.fillStyle = data.customizations.background_color;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            renderGameDecorativeLines();
+
             ctx.fillStyle = data.customizations.ball_color;
             ctx.fillRect(data.ball_x, data.ball_y, 10, 10);
 
             ctx.fillStyle = 'black';
             ctx.fillRect(10, data.player1_y, 10, PADDLE_HEIGHT);
+
             if (data.is_multi_player) {
                 ctx.fillStyle = 'black';
-                ctx.fillRect(780, data.player2_y, 10, PADDLE_HEIGHT);
+                ctx.fillRect(canvas.width - 20, data.player2_y, 10, PADDLE_HEIGHT);
             }
             else {
                 ctx.fillStyle = 'black';
-                ctx.fillRect(780, data.ai_y, 10, PADDLE_HEIGHT);
+                ctx.fillRect(canvas.width - 20, data.ai_y, 10, PADDLE_HEIGHT);
             }
 
             ctx.font = '30px Arial';
-            ctx.fillText(data.player_score, 200, 50);
-            ctx.fillText(data.opp_score, 600, 50);
+            // print the scores based on map width
+            ctx.fillText(data.player_score, canvas.width / 2 - 50, 50);
+            ctx.fillText(data.opp_score, canvas.width / 2 + 50, 50);
 
-            if (data.random_power_up) {
+            if (data.effected && data.random_power_up) {
                 if (data.random_power_up == 'powerup_slow_down_opponent') {
                     ctx.fillStyle = 'blue';
                 } else if (data.random_power_up == 'powerup_speed_up_yourself') {
@@ -62,6 +125,11 @@
                     ctx.fillStyle = 'red';
                 }
                 ctx.fillRect(data.random_power_up_x + data.threshold / 2, data.random_power_up_y + data.threshold / 2, data.threshold, data.threshold);
+            } else if (!data.effected && data.random_power_up) {
+                // text to show the power up
+                ctx.fillStyle = 'black';
+                ctx.font = '30px Arial';
+                ctx.fillText(data.random_power_up, 300, 300);
             }
         }
 
@@ -113,6 +181,7 @@
                 "is_multiplayer": self.is_multiplayer,
                 "state": self.state,
                 "treashold": self.treashold,
+                "effected": self.effected,
                 "customizations": {
                     "ball_color": self.ball_color,
                     "map_width": self.map_width,

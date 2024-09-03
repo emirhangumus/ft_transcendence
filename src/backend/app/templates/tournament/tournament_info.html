@@ -10,6 +10,7 @@
 {
     const tournamentID = document.getElementById('tournamentID').value;
     const playersInTournament = document.getElementById('playersInTournament');
+    const startTournamentButton = document.getElementById('start-tournament');
 
     const chatSocket = new WebSocket(
         'wss://'
@@ -30,10 +31,10 @@
                 playerDiv.innerHTML = `<p>${player.name}${player.is_owner ? ' (Owner)' : ''}</p>`;
                 playersInTournament.appendChild(playerDiv);
             });
-        } else if (data.type == 'player_removal') {
-            console.log('Player removed');
         } else if (data.type == 'tournament_start') {
             console.log('Tournament started');
+        } else if (data.type == 'game_redirect') {
+            setCurrentPath('/game/' + data.game_id);
         }
     };
 
@@ -41,8 +42,14 @@
         console.log('Leaved from tournament (socket closed)');
     };
 
-    cleanupFunctions.push(() => {
-        chatSocket.close();
+    startTournamentButton.addEventListener('click', () => {
+        chatSocket.send(JSON.stringify({
+            'type': 'start_tournament'
+        }));
     });
+
+    // cleanupFunctions.push(() => {
+    //     chatSocket.close();
+    // });
 }
 </script>

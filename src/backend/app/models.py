@@ -6,7 +6,7 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator
 class Accounts(models.Model):
     id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, unique=True)
     bio = models.TextField(default='')
-    profile_picture_url = models.TextField(default='/static/images/register_cat.png')
+    profile_picture_url = models.TextField(default='/api/v1/static/register_cat.jpg')
     status = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -93,6 +93,7 @@ class Tournaments(models.Model):
     player_amount = models.IntegerField()
     who_joined = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='tournament_joined_set')
     status = models.CharField(max_length=10)
+    game_settings = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

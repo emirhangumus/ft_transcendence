@@ -1,7 +1,41 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Accounts, ChatMessages, ChatRooms, ChatUsers
-from .queries.chat import assignChatbotRoom
+from .models import Accounts, ChatMessages, ChatRooms, ChatUsers, GameRecords, GameStats
+from .queries.chat import assignChatbotRoom, createChatRoom, leaveChatRoom
+
+class GameStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameStats
+        fields = ['stats']
+
+class GameRecordSerializer(serializers.ModelSerializer):
+    stats = GameStatsSerializer(source='gamestats_set', many=True, read_only=True)
+
+    class Meta:
+        model = GameRecords
+        fields = ['game_id', 'player1_score', 'player2_score', 'winner_id', 'total_match_time', 'tournament_id', 'created_at', 'stats']
+
+class ChangeProfileSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=30, required=True)
+    first_name = serializers.CharField(max_length=30, required=True)
+    last_name = serializers.CharField(max_length=30, required=True)
+    email = serializers.EmailField(max_length=128, required=True)
+    bio = serializers.CharField(max_length=256, required=True)
+    profile_picture_url = serializers.URLField(max_length=256, required=True)
+
+    def validate(self, data):
+        username = data.get('username')
+        email = data.get('email')
+        if username and email:
+            if not User.objects.filter(username=username).exists():
+                if not User.objects.filter(email=email).exists():
+                    return data
+                else:
+                    raise serializers.ValidationError("Email already exists")
+            else:
+                raise serializers.ValidationError("Username already exists")
+        else:
+            raise serializers.ValidationError("Invalid data")
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,6 +112,11 @@ class FriendRequestActionsSerializer(serializers.Serializer):
                         return data
                     else:
                         raise serializers.ValidationError("Friend request not found")
+                elif action == 'remove':
+                    if self.context['request'].user.friendships_sender_set.filter(receiver=target).exists() or self.context['request'].user.friendships_receiver_set.filter(sender=target).exists():
+                        return data
+                    else:
+                        raise serializers.ValidationError("Friend request not found")
                 else:
                     raise serializers.ValidationError("Invalid action")
         else:
@@ -94,6 +133,7 @@ class FriendRequestActionsSerializer(serializers.Serializer):
             friendship = target.friendships_sender_set.get(receiver=user)
             friendship.status = 'accepted'
             friendship.save()
+            createChatRoom(f"{user.username}-{target.username}", user, [target.username], can_leave=False)
         elif action == 'reject':
             # delete the friendship
             friendship = target.friendships_sender_set.get(receiver=user)
@@ -102,6 +142,19 @@ class FriendRequestActionsSerializer(serializers.Serializer):
             friendship = user.friendships_sender_set.get(receiver=target)
             friendship.status = 'rejected'
             friendship.save()
+        elif action == 'remove':
+            try:
+                friendship = user.friendships_sender_set.get(receiver=target)
+            except Exception:
+                friendship = target.friendships_sender_set.get(receiver=user)
+                pass
+
+            if friendship:
+                friendship.delete()
+                # find the chat room and delete it
+                chatroom = ChatRooms.objects.filter(name=f"{user.username}-{target.username}", can_leave=False).first()
+                if chatroom:
+                    leaveChatRoom(chatroom.id, user.id)
         return friendship
     
 
@@ -138,9 +191,10 @@ class TournamentSerializer(serializers.Serializer):
     def validate(self, data):
         player_amount = data['player_amount']
         if player_amount:
-            if 2 <= int(player_amount) <= 32:
+            # player amount must be power of 4 and max 32
+            if 4 <= player_amount <= 32 and player_amount & (player_amount - 1) == 0:
                 return data
             else:
-                raise serializers.ValidationError("Invalid player amount")
+                raise serializers.ValidationError("Invalid player amount. Must be power of 4 and max 32")
         else:
             raise serializers.ValidationError("Invalid data")

@@ -20,15 +20,39 @@
             {% for friend in friends %}
             <div class="flex justify-between items-center bg-zinc-100 rounded px-2 py-1 shadow border">
                 <div class="flex justify-center items-center">
-                    {{ friend.username }}
+                    <a href="/profile/{{ friend.username }}" style="text-decoration: underline;">{{ friend.username }}</a>
+                    <!-- {{ friend.username }} -->
                 </div>
                 <div class="flex justify-center items-center">
                     <button class="border-black rounded flex justify-center items-center bg-blue-600 text-white px-1">
                         chat
                     </button>
+                    <button class="remove-friend border-black rounded flex justify-center items-center bg-red-600 text-white px-1" data-username="{{ friend.username }}">
+                        remove
+                    </button>
                 </div>
             </div>
             {% endfor %}
+            <script>
+                {
+                    const removeFriendButtons = document.querySelectorAll('.remove-friend');
+                    removeFriendButtons.forEach((button) => {
+                        button.addEventListener('click', async function onRemoveFriendClick(event) {
+                            const username = button.getAttribute('data-username');
+                            const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=remove`, {
+                                method: 'PATCH',
+                            });
+                            const data = await response.json();
+                            if (data.status) {
+                                alert(data.message);
+                                setPage();
+                            } else {
+                                alert(data.message);
+                            }
+                        });
+                    });
+                }
+            </script>
         </div>
         <div class="border-black rounded flex flex-col justify-center items-center">
             <h2>friend requests</h2>
