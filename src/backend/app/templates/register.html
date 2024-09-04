@@ -97,12 +97,11 @@
                     })
                 });
                 const data = await response.json();
-                if (!data.success) {
+                if (!data.status) {
                     alert(data.error);
                 } else {
-                    alert('User registered successfully');
+                    alert(data.message);
                     setCurrentPath('/login');
-                    // window.location.href = '/login';
                 }
             });
         }

@@ -14,33 +14,65 @@
         <p><strong>Joined:</strong> {{ account.created_at }}</p>
         <p><strong>Last Updated:</strong> {{ account.updated_at }}</p>
 
-         <!-- Game Statistics -->
-         <h2 class="text-xl font-bold mt-6">Games Records: {{ count }}</h2>
-         <ul>
-         {% for game in records %}
-             <li>
-                 <p>----------------------------------------------------------------------------------------</p>
-                 <p><strong>Game ID:</strong> {{ game.game_id }}</p>
-                 <p><strong>Player 1 Score:</strong> {{ game.player1_score }}</p>
-                 <p><strong>Player 2 Score:</strong> {{ game.player2_score }}</p>
-                 <!-- <p><strong>Winner:</strong> {{ game.winner_id }}</p> -->
-                 <p><strong>Winner:</strong> 
+        <!-- Game Statistics -->
+        <h2 class="text-xl font-bold mt-6">Games Records: {{ count }}</h2>
+        <ul>
+        {% for game in records %}
+            <li>
+                <p>----------------------------------------------------------------------------------------</p>
+                <p><strong>Game ID:</strong> {{ game.game_id }}</p>
+                <p><strong>Player 1 Score:</strong> {{ game.player1_score }}</p>
+                <p><strong>Player 2 Score:</strong> {{ game.player2_score }}</p>
+                <p><strong>Winner:</strong> 
                     {% if game.winner_id %}
                         <a href="/profile/{{ game.winner_id }}" style="text-decoration: underline;">{{ game.winner_id }}</a>
                     {% else %}
                         None
                     {% endif %}
                 </p>
-                 <p><strong>Total Match Time:</strong> {{ game.total_match_time }}</p>
-                 <p>----------------------------------------------------------------------------------------</p>
-             </li>
-         {% endfor %}
-         </ul>
+                <p><strong>Total Match Time:</strong> {{ game.total_match_time }}</p>
+                <p>----------------------------------------------------------------------------------------</p>
+            </li>
+        {% endfor %}
+        </ul>
 
-         <!-- Game Stats Chart -->
-         <h2 class="text-xl font-bold mt-6">Game Stats:</h2>
-         <img src="data:image/png;base64,{{ chart_image }}" alt="Game Stats Chart">
- 
+        <!-- Game Stats Chart -->
+        <h2 class="text-xl font-bold mt-6">Game Stats:</h2>
+        <canvas id="myPieChart" width="300" height="300"></canvas>
+
+        <script>
+            {
+                // const chartDataRaw = '';
+
+                // function drawPieChart(data, colors) {
+                //     var canvas = document.getElementById('myPieChart');
+                //     var ctx = canvas.getContext('2d');
+                //     var total = data.reduce((sum, value) => sum + value, 0);
+                //     var startAngle = 0;
+
+                //     data.forEach((value, i) => {
+                //         var sliceAngle = (value / total) * 2 * Math.PI;
+                //         ctx.beginPath();
+                //         ctx.moveTo(150, 150);  // Center of the pie chart
+                //         ctx.arc(150, 150, 150, startAngle, startAngle + sliceAngle);
+                //         ctx.closePath();
+                //         ctx.fillStyle = colors[i];
+                //         ctx.fill();
+                //         startAngle += sliceAngle;
+                //     });
+                // }
+
+                // // Get the JSON string and parse it
+                // var chartData = JSON.parse(chartDataRaw);
+
+                // // Extract the data values
+                // var data = [chartData.data_one, chartData.data_two, chartData.data_three];
+                // var colors = ['#FF6384', '#36A2EB', '#FFCE56'];
+
+                // // Draw the chart
+                // drawPieChart(data, colors);
+            }
+        </script>
     </div>
 </div>
 

@@ -32,6 +32,13 @@
             + '/ws/'
         );
 
+        function renderCenteredText(text, fontSize) {
+            ctx.fillStyle = 'black';
+            ctx.font = `${fontSize}px Arial`;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, canvas.width / 2 - textWidth / 2, canvas.height / 2);
+        }
+
         function renderGameDecorativeLines()
         {
             if (canvasWidth === -1 || canvasHeight === -1) {
@@ -134,24 +141,18 @@
         }
 
         function gamePauseScreen(data) {
-            ctx.fillStyle = 'black';
-            ctx.font = '30px Arial';
-            ctx.fillText("Oyun durduruldu.", 300, 300);
+            renderCenteredText('Oyun duraklatıldı', 30);
         }
 
         function gameWaitScreen() {
-            ctx.fillStyle = 'black';
-            ctx.font = '30px Arial';
-            ctx.fillText("Oyuncu bekleniyor...", 300, 300);
+            renderCenteredText('Oyuncu bekleniyor...', 30);
         }
 
         function gameIsStartingScreen() {
             let counter = 3;
             const interval = setInterval(() => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'black';
-                ctx.font = '30px Arial';
-                ctx.fillText(counter, 300, 300);
+                renderCenteredText(`Oyun başlıyor... ${counter}`, 30);
                 counter--;
                 if (counter < 0) {
                     clearInterval(interval);
@@ -162,6 +163,12 @@
         chatSocket.onmessage = function (e) {
             let data = JSON.parse(e.data);
             data = data.payload.data;
+            if (data.state === 'game_over') {
+                chatSocket.close();
+                alert('Oyun bitti!');
+                setCurrentPath('/');
+                return;
+            }
             if (canvasWidth !== data.customizations.map_width || canvasHeight !== data.customizations.map_height) {
                 canvasWidth = data.customizations.map_width;
                 canvasHeight = data.customizations.map_height;
@@ -245,7 +252,9 @@
         }, 1000 / 20);
 
         function cleanup() {
-            chatSocket.close();
+            if (chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.close();
+            }
             body.style.overflow = 'auto';
             clearInterval(interval);
         }

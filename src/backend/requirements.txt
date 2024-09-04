@@ -2,6 +2,7 @@ Django==4.0
 psycopg2>=2.8.4
 djangorestframework
 djangorestframework-simplejwt==5.3.1
-# daphne==3.0.2
+pyotp==2.0.1
 channels==3.0.4
 requests==2.25.1
+qrcode

@@ -8,11 +8,22 @@ class Accounts(models.Model):
     bio = models.TextField(default='')
     profile_picture_url = models.TextField(default='/api/v1/static/register_cat.jpg')
     status = models.BooleanField(default=True)
+    two_factor_auth = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'accounts'
+
+class BlockedUsers(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='blocked_blocker_set')
+    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='blocked_blocked_set')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'blocked_users'
 
 class ChatRooms(models.Model):
     id = models.BigAutoField(primary_key=True)

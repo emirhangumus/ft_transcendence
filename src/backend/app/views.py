@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render, get_object_or_404
 from django.template.response import TemplateResponse
-from .utils import genResponse, generateRandomID, isValidUsername
+from .utils import genResponse, generateRandomID, isValidUsername, generate2FAQRCode, generate_svg_pie_chart
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts
 from .queries.friend import getFriendState, getFriends
@@ -39,22 +39,9 @@ class ProfileView(APIView):
         user = request.user
         account = get_object_or_404(Accounts, id=user)
         serializer = AccountSerializer(account)
-        context = {'account': serializer.data}
+        context = {'account': serializer.data, '2fa': generate2FAQRCode('test@test.com')}
         return TemplateResponse(request, 'profile.html', context)
-    
 
-# class UserProfileView(APIView):
-#     permission_classes = [IsAuthenticated]  # Allow viewing profiles without authentication
-
-#     def get(self, request, username):
-#         user = get_object_or_404(User, username=username)
-#         account = get_object_or_404(Accounts, id=user)
-#         serializer = AccountSerializer(account)
-#         context = {
-#             'account': serializer.data,
-#             'user': user,
-#         }
-#         return TemplateResponse(request, 'user_profile.html', context)
     
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]  # Allow viewing profiles without authentication
@@ -71,16 +58,34 @@ class UserProfileView(APIView):
         game_players = GamePlayers.objects.filter(player_id=user)
         game_records = GameRecords.objects.filter(id__in=game_players.values('game_record_id')).order_by('-created_at') 
         game_count = game_records.count()
+        
+        # # Example data for chart (you will likely need to replace this with real data)
+        # chart_data = {
+        #     'data_one': 10,
+        #     'data_two': 20,
+        #     'data_three': 30,
+        # }
 
-        # Pass the serialized data to the template
+        # Calculate wins, losses, and ties
+        wins = game_records.filter(winner_id=user).count()
+        losses = game_records.filter(~models.Q(winner_id=user)).exclude(winner_id=None).count()
+        ties = game_records.filter(winner_id=None).count()
+
+        # Generate SVG chart
+        svg_chart = generate_svg_pie_chart(wins, losses, ties)
+
+        # Pass the serialized data and chart data to the template
         context = {
             'account': account_serializer.data,
             'user': user,
             'records': game_records,
             'count': game_count,
+            'svg_chart': svg_chart,
+            # 'chart_data': chart_data,
         }
         
         return TemplateResponse(request, 'user_profile.html', context)
+
 
 class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -181,7 +186,29 @@ class LoginView(APIView):
         except Exception as e:
             response = genResponse(False, str(e), None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
-        
+
+class TwoFactorAuthView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return TemplateResponse(request, '2fa.html')
+
+    def post(self, request):
+        try:
+            user = request.user
+            state = Accounts.objects.get(id=user.id).two_factor_auth
+            if state:
+                Accounts.objects.filter(id=user.id).update(two_factor_auth=False)
+                response = genResponse(True, "Two factor authentication disabled", None)
+                return Response(response, status=status.HTTP_200_OK)
+            else:
+                Accounts.objects.filter(id=user.id).update(two_factor_auth=True)
+                response = genResponse(True, "Two factor authentication enabled", None)
+                return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            response = genResponse(False, str(e), None)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
 class FriendsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -293,7 +320,9 @@ class GameView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        return TemplateResponse(request, 'game/waiting_room.html')
+        # get the requested path
+        path = request.path
+        return TemplateResponse(request, 'game/waiting_room.html', { "type": path.split('/')[-1] })
     
 class GamePlayView(APIView):
     parser_classes = [JSONParser]

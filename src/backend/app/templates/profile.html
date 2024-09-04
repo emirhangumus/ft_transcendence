@@ -33,11 +33,48 @@
         <div class="bg-white border border-[#e0e0e0] rounded-md p-6 w-full">
             <h1 class="text-2xl font-bold mb-4">{{ user.first_name }} {{ user.last_name }}'s Profile</h1>
             <img src="{{ account.profile_picture_url|default:'/api/v1/static/register_cat.jpg' }}" alt="Profile Picture" class="rounded-full w-32 h-32 mb-4">
+            <p>
+                {{ 2fa|safe }}
+            </p>
             <p><strong>Bio:</strong> {{ account.bio }}</p>
             <p><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
             <p><strong>Joined:</strong> {{ account.created_at }}</p>
             <p><strong>Last Updated:</strong> {{ account.updated_at }}</p>
             <p><strong>User Page:</strong> <a href="/profile/{{ user.username }}" style="text-decoration: underline;">{{ user.username }}</a></p>
+            <div class="mt-4">
+                <button
+                    data-state="{{ account.two_factor_auth }}"
+                    id="enable-disable-2fa"
+                    class="bg-blue-600 text-white py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition-all ease-in-out duration-300 px-4"
+                >
+                    Enable/Disable 2FA
+                </button>
+                <script>
+                    {
+                        const enableDisable2FA = document.getElementById('enable-disable-2fa');
+                        if (enableDisable2FA) {
+                            enableDisable2FA.addEventListener('click', async function onEnableDisable2FA(event) {
+                                const response = await fetchAPI('/api/v1/auth/2fa/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                const prevState = enableDisable2FA.dataset.state;
+                                const data = await response.json();
+                                if (data.status) {
+                                    if (data.message.includes('disabled')) {
+                                        console.log(window.__model);
+                                        popupModel('2FA Disabled', data.message, 'OK');
+                                    } else {
+                                        popupModel('2FA Enabled', data.message, 'OK');
+                                    }
+                                }
+                            });
+                        }
+                    }
+                </script>
+            </div>
         </div>
     </div>
 </div>

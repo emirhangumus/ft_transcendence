@@ -4,6 +4,7 @@
 
 {% block content %}
 <div>
+    <input type="hidden" id="room-type" value="{{ type }}">
     <select id="ball-color" class="block w-full mt-4 p-2 border border-gray-300 rounded">
         <option value="blue">Blue Ball</option>
         <option value="red">Red Ball</option>
@@ -35,7 +36,7 @@
 {
     const startGameButton = document.getElementById('start-game');
 
-    const availabletRoomTypes = ['ai', 'multi', 'tournament'];
+    const availableRoomTypes = ['ai', 'multi', 'tournament'];
 
     startGameButton.addEventListener('click', async () => {
         const ballColor = document.getElementById('ball-color').value;
@@ -48,9 +49,9 @@
         const powerupSpeedUpYourself = document.getElementById('powerup-speed-up-yourself').checked;
         const powerupRevertOpponentControls = document.getElementById('powerup-revert-opponent-controls').checked;
 
-        const room_type = new URLSearchParams(window.location.search).get('type');
+        const room_type = document.getElementById('room-type').value;
 
-        if (!availabletRoomTypes.includes(room_type)) {
+        if (!availableRoomTypes.includes(room_type)) {
             alert('Invalid room type');
             return;
         }

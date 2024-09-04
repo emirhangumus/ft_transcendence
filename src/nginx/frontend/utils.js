@@ -147,3 +147,32 @@ function generateToast(message, title="", type) {
     }, 300);
   }, 3000);
 }
+
+/**
+ * Crete a model by ground up
+ */
+function popupModel(title, content, buttons) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="close">&times;</span>
+        <h2>${title}</h2>
+      </div>
+      <div class="modal-body
+      ">
+        ${content}
+      </div>
+      <div class="modal-footer">
+        ${buttons}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.style.display = 'block';
+  const close = modal.querySelector('.close');
+  close.onclick = () => {
+    modal.remove();
+  };
+}

@@ -87,7 +87,9 @@ class PongGame:
 
     def get_game_data(self):
         if self.is_game_over:
-            return "game_is_over"
+            return {
+                "state": "game_is_over"
+            }
         return {
             "ball_x": self.ball_x,
             "ball_y": self.ball_y,

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import HomeView, RegisterView, LoginView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView, ProfileView, EditProfileView, UserProfileView
+from .views import HomeView, RegisterView, LoginView, TwoFactorAuthView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView, ProfileView, EditProfileView, UserProfileView, TournamentView
 from . import consumers
 
 urlpatterns = [
@@ -9,6 +9,7 @@ urlpatterns = [
     path('', HomeView.as_view(), name='home'),
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/', LoginView.as_view(), name='login'),
+    path('auth/2fa/', TwoFactorAuthView.as_view(), name='2fa'),
 
     path('profile/', ProfileView.as_view(), name='profile'),
     path('profile/edit/', EditProfileView.as_view(), name='edit_profile'),
@@ -19,8 +20,9 @@ urlpatterns = [
     path('chat/', ChatView.as_view(), name='chat'),
     path('chat/new/', ChatCreateView.as_view(), name='new_chat'),
     path('chat/<str:chat_id>/', ChatView.as_view(), name='chat_room'),
-
-    path('play/', GameView.as_view(), name='play'),
+    
+    path('play/ai', GameView.as_view(), name='play_ai'),
+    path('play/multi', GameView.as_view(), name='play_multi'),
     path('game/create/', GameCreateView.as_view(), name='create_game'),
     path('game/<str:game_id>/', GamePlayView.as_view(), name='game'),
     

@@ -39,7 +39,7 @@
 {
     const startGameButton = document.getElementById('start-game');
 
-    const availabletRoomTypes = ['ai', 'multi', 'tournament'];
+    const availableRoomTypes = ['ai', 'multi', 'tournament'];
 
     startGameButton.addEventListener('click', async () => {
         const tournamentName = document.getElementById('tournament-name').value;
@@ -66,7 +66,7 @@
             return;
         }
 
-        if (!availabletRoomTypes.includes(room_type)) {
+        if (!availableRoomTypes.includes(room_type)) {
             alert('Invalid room type');
             return;
         }

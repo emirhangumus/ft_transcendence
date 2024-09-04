@@ -15,7 +15,7 @@
     const messageTemplate = (user, message, created_at) => `
     <div class="flex justify-between items-center">
         <div>
-            <p class="font-bold">${user}</p>
+            <a href="/profile/${user}" class="font-bold">${user}</a>
             <p>${message}</p>
         </div>
         <div>
@@ -23,7 +23,7 @@
         </div>
     </div>
     `;
-
+    
     const roomID = document.getElementById('chatID').value;
     const log = document.getElementById('chat-log');
     const thereIsNoMessage = document.getElementById('there-is-no-message');
@@ -40,6 +40,7 @@
         const data = JSON.parse(e.data);
         thereIsNoMessage.style.display = 'none';
         log.innerHTML += messageTemplate(data.username, data.message, data.created_at);
+        disableAllAnchorTags();
     };
 
     chatSocket.onclose = function(e) {

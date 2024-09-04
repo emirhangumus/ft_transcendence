@@ -23,9 +23,11 @@ const ROUTES = parseRoutes({
     '/chat/new': {
         endpoint: '/api/v1/chat/new'
     },
-    '/play': {
-        endpoint: '/api/v1/play',
-        queryParams: ['type']
+    '/play/ai': {
+        endpoint: '/api/v1/play/ai',
+    },
+    '/play/multi': {
+        endpoint: '/api/v1/play/multi',
     },
     '/game/:id(6)': {
         endpoint: '/api/v1/game/:id'

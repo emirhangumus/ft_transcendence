@@ -68,10 +68,10 @@
                     <a href='/friends' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Friends</a>
                 </li>
                 <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
-                    <a href='/play?type=ai' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Play AI</a>
+                    <a href='/play/ai' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Play AI</a>
                 </li>
                 <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
-                    <a href='/play?type=multi' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Play Multi</a>
+                    <a href='/play/multi' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Play Multi</a>
                 </li>
                 <li class='max-lg:border-b border-gray-300 max-lg:py-3 px-3'>
                     <a href='/tournament' class='hover:text-[#007bff] text-gray-500 block font-semibold text-[15px]'>Tournament</a>
@@ -93,10 +93,10 @@
                     </ul>
                 </div>
             </div>
-            <a href="/logout"
+            <button id="logout-link"
                 class='px-4 py-2 text-sm rounded-full font-bold text-white border-2 border-[#007bff] bg-[#007bff] transition-all ease-in-out duration-300 hover:bg-transparent hover:text-[#007bff]'>
                 Çıkış
-            </a>
+        </button>
             {% else %}
             <a href="/login"
                 class='px-4 py-2 text-sm rounded-full font-bold text-white border-2 border-[#007bff] bg-[#007bff] transition-all ease-in-out duration-300 hover:bg-transparent hover:text-[#007bff]'>
@@ -157,6 +157,24 @@
         }
     });
 }
+</script>
+
+<script>
+    {
+        document.getElementById('logout-link').addEventListener('click', function(event) {
+            // Show confirmation dialog
+            const userConfirmed = confirm("Are you sure you want to log out?");
+            
+            // If the user does not confirm, prevent the default action (navigation)
+            if (!userConfirmed) {
+                event.preventDefault();
+                return;
+            } else {
+                deleteAllCookies();
+                setCurrentPath('/login');
+            }
+        });
+    }
 </script>
 
 <footer class='bg-[#f8f9fa] py-10 px-4 sm:px-10'>
