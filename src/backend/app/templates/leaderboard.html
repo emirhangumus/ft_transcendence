@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto mt-12">
+    <div class="bg-white border border-gray-200 rounded-md p-6">
+        <h1 class="text-2xl font-bold mb-4">Leaderboard: Top {{ num_users }} Users</h1>
+        <ul class="list-none">
+            {% for entry in leaderboard %}
+            <li class="mb-6">
+                <div class="flex items-center">
+                    <img src="{{ entry.profile_picture_url }}" alt="Profile Picture" class="rounded-full w-16 h-16 mr-4">
+                    <div>
+                        <h2 class="text-lg font-semibold"><a href="/profile/{{ entry.user.username }}" style="text-decoration: underline;">{{ entry.user.username }}</a></h2>
+                        <p class="text-sm">Wins: {{ entry.wins }}</p>
+                        <p class="text-sm">{{ entry.bio }}</p>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% if num_users == 0 %}
+            <p>No users found with wins yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

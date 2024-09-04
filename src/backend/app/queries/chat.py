@@ -76,3 +76,12 @@ def leaveChatRoom(roomId, userId):
         if ChatUsers.objects.filter(room=chatRoom).count() == 1:
             chatRoom.delete()
     return True
+
+def deleteChatRoom(roomId):
+    # delete all messages
+    ChatMessages.objects.filter(room=roomId).delete()
+    # delete all users
+    ChatUsers.objects.filter(room=roomId).delete()
+    # delete the room
+    ChatRooms.objects.filter(id=roomId).delete()
+    return True

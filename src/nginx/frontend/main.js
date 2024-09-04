@@ -50,10 +50,17 @@ const ROUTES = parseRoutes({
     '/profile/:username': {
         endpoint: '/api/v1/profile/:username'  // New route to view a profile by username
     },
+    '/game-history/:id(6)': {
+        endpoint: '/api/v1/game-history/:id' 
+    },
+    '/leaderboard': {
+        endpoint: '/api/v1/leaderboard'
+    },
 });
 
 const openedSockets = {};
 const [currentPath, setCurrentPath] = signal(window.location.pathname);
+const [onlineFriends, setOnlineFriends] = signal([]);
 let notificationWS = null;
 let MAX_TRIES = 3;
 let cleanupFunctions = [];
@@ -167,6 +174,17 @@ function notificationFunc() {
 
                 notificationList.appendChild(el);
             }
+            if (data.type == 'online_friends')
+                setOnlineFriends(data.payload.online_friends);
+            if (data.type == 'update_status')
+            {
+                let online_friends = [...onlineFriends]
+                if (data.payload.status)
+                    online_friends.push(data.payload.username);
+                else
+                    online_friends = online_friends.filter(e => e !== data.payload.username);
+                setOnlineFriends(online_friends);
+            }
             
             console.log('WebSocket message received:', data);
         }
@@ -182,8 +200,23 @@ function notificationFunc() {
     }
 }
 
+function lookForFriendStatuses()
+{
+    circles = document.getElementsByClassName('friendStatusCircle');
+    for (let i = 0; i < circles.length; i++) {
+        const username = circles[i].getAttribute('data-username');
+        if (onlineFriends().includes(username)) {
+            circles[i].style.backgroundColor = 'green';
+        }
+        else {
+            circles[i].style.backgroundColor = 'red';
+        }
+    }
+}
+
 function runAfterRender() {
     notificationFunc();
+    lookForFriendStatuses();
 }
 
 function setPage()

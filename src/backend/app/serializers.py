@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Accounts, ChatMessages, ChatRooms, ChatUsers, GameRecords, GameStats
-from .queries.chat import assignChatbotRoom, createChatRoom, leaveChatRoom
+from .queries.chat import assignChatbotRoom, createChatRoom, leaveChatRoom, deleteChatRoom
 
 class GameStatsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -139,9 +139,9 @@ class FriendRequestActionsSerializer(serializers.Serializer):
             friendship = target.friendships_sender_set.get(receiver=user)
             friendship.delete()
         elif action == 'cancel':
+            # delete the friendship
             friendship = user.friendships_sender_set.get(receiver=target)
-            friendship.status = 'rejected'
-            friendship.save()
+            friendship.delete()
         elif action == 'remove':
             try:
                 friendship = user.friendships_sender_set.get(receiver=target)
@@ -154,7 +154,7 @@ class FriendRequestActionsSerializer(serializers.Serializer):
                 # find the chat room and delete it
                 chatroom = ChatRooms.objects.filter(name=f"{user.username}-{target.username}", can_leave=False).first()
                 if chatroom:
-                    leaveChatRoom(chatroom.id, user.id)
+                    deleteChatRoom(chatroom.id)
         return friendship
     
 

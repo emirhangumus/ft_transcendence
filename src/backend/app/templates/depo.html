@@ -11,8 +11,8 @@
         <p><strong>Email:</strong> {{ user.email }}</p>
         <p><strong>Bio:</strong> {{ account.bio }}</p>
         <p><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
-        <p><strong>Joined:</strong> {{ account.created_at }}</p>
-        <p><strong>Last Updated:</strong> {{ account.updated_at }}</p>
+        <p><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
+        <p><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
 
          <!-- Game Statistics -->
          <h2 class="text-xl font-bold mt-6">Games Records: {{ count }}</h2>

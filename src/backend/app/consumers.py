@@ -1,12 +1,18 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 import json
-from .models import ChatRooms, ChatMessages, ChatUsers, Notifications, GameRecords
+from .models import ChatRooms, ChatMessages, ChatUsers, Notifications, GameRecords, GameStats, Friendships, Accounts
 from django.contrib.auth.models import User
 import time
 import asyncio
 from .utils import checkAuthForWS
 from .managers import NotificationManager, TournamentManager
+from .queries.game import updateGameRoom
+from .queries.friend import getFriends
+from django.db.models import Q
+from channels.db import database_sync_to_async
+
+from pprint import pprint
 
 game_rooms = {}
 user_room_pairs = {}
@@ -133,8 +139,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                 print("game not found")
                 await self.close()
                 return
+            
+            if not game_rooms[self.room_group_name].get('game').get_is_multiplayer() and game_rooms[self.room_group_name].get('player1'):
+                print("game is full")
+                await self.close()
+                return
     
-            if game_rooms[self.room_group_name].get('player1') and game_rooms[self.room_group_name].get('player2'):
+            if game_rooms[self.room_group_name].get('game').get_is_multiplayer() and game_rooms[self.room_group_name].get('player1') and game_rooms[self.room_group_name].get('player2'):
                 print("game is full")
                 await self.close()
                 return
@@ -209,10 +220,65 @@ class GameConsumer(AsyncWebsocketConsumer):
 
             # Wait for a specific interval before sending the next update
             await asyncio.sleep(0.05)  # Adjust the interval as needed | 0.05 is 20 FPS
+        
+        if report is not None and report is not 'final_report_is_already_taken':
+            player1_score = report['player_score']
+            player2_score = report['opp_score']
+            total_match_time = report['total_match_time']
+            heat_map_of_ball = report['heat_map_of_ball']
+            loser = None
+            winner = None
+            if player1_score > player2_score:
+                winner = game_rooms[self.room_group_name]['player1']['user']
+                loser = game_rooms[self.room_group_name]['player2']['user'] if game_rooms[self.room_group_name]['player2'] else None
+            elif player1_score < player2_score:
+                winner = game_rooms[self.room_group_name]['player2']['user'] if game_rooms[self.room_group_name]['player2'] else None
+                loser = game_rooms[self.room_group_name]['player1']['user']
+            
+            winner = await self.get_user(winner['user_id'] if winner else 1)
+            loser = await self.get_user(loser['user_id'] if loser else 1)
+
+            notificationManager.add_notification(loser.id, 'You have lost the game, better luck next time', {"path": "/"}, 'redirection', False)
+            notificationManager.add_notification(winner.id, 'You have won the game, congratulations', {"path": "/"}, 'redirection', False)
+            await self.update_game_room(self.game_id, player1_score, player2_score, winner, total_match_time)
+            await self.update_game_stats(self.game_id, {
+                "heatmap": heat_map_of_ball
+            })
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_data',
+                    'message': {    
+                        'type': 'game_over',
+                        'payload': report
+                    }
+                }
+            )
+            
             
     async def game_data(self, event):
         # Send the game data to WebSocket
         await self.send(text_data=json.dumps(event['message']))
+        
+    @sync_to_async
+    def update_game_room(self, game_id, player1_score, player2_score, winner_id, total_match_time):
+        return updateGameRoom(game_id, {
+            'player1_score': player1_score,
+            'player2_score': player2_score,
+            'winner_id': winner_id,
+            'total_match_time': total_match_time
+        })
+        
+    @sync_to_async
+    def update_game_stats(self, game_id, stats):
+        game = GameRecords.objects.get(game_id=game_id)
+        game_stats = GameStats.objects.get(game_record=game)
+        game_stats.stats = stats
+        game_stats.save()
+    
+    @sync_to_async
+    def get_user(self, user_id):
+        return User.objects.get(id=user_id)
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -228,7 +294,16 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             )
             await self.accept()
             notificationManager.register_user(self, self.user_id)
+            await self.set_user_status(self.user_id, True)
+            user = await self.get_user(self.user_id)
+            friends = await self.get_user_friends(self.user_id)
+            online_friends = []
+            for friend in friends:
+                if friend.status:
+                    online_friends.append(friend.id)
+                notificationManager.add_notification(friend.id, f'{self.user_id} entered!', { "username": user.username, "status": True }, 'update_status', False)
             notifications = await self.get_notifications(self.user_id, 'no')
+            notificationManager.add_notification(self.user_id, f'Online friends', { "online_friends": [friend.username for friend in online_friends] }, 'online_friends', False)
             for notification in notifications:
                 message = notification.payload.get('message')
                 notificationManager.add_notification(self.user_id, message, notification.payload, notification.type, False)
@@ -245,6 +320,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        await self.set_user_status(self.user_id, False)
+        user = await self.get_user(self.user_id)
+        friends = await self.get_user_friends(self.user_id)
+        for friend in friends:
+            notificationManager.add_notification(friend.id, f'{self.user_id} leaved!', { "username": user.username, "status": False }, 'update_status', False)
         notificationManager.unregister_user(self.user_id)
         
     async def receive(self, text_data):
@@ -265,11 +345,25 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         return list(notifications)
     
     @sync_to_async
-    def save_the_finished_game(self, game_id, winner_id, report):
-        game = GameRecords.objects.get(id=game_id)
-        game.winner_id = winner_id
-        game.save()
-
+    def get_user(self, user_id):
+        return User.objects.get(id=user_id)
+    
+    @sync_to_async
+    def set_user_status(self, user_id, status):
+        user = User.objects.get(id=user_id)
+        user.status = status
+        user.save()
+    
+    @sync_to_async
+    def get_user_friends(self, user_id):
+        user = User.objects.get(id=user_id)
+        friends = Friendships.objects.filter(Q(sender=user) | Q(receiver=user), status='accepted').values('sender', 'receiver')
+        friends = [friend['sender'] if friend['receiver'] == user.id else friend['receiver'] for friend in friends]
+        friends = Accounts.objects.filter(id__in=friends)
+        if friends:
+            return list(friends)
+        return []
+    
 class TournamentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user_data = checkAuthForWS(self.scope)

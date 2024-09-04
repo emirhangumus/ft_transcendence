@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 import random
 import math
 from .queries.game import createGameRoom, addPlayerToGameRoom, updateGameRoom
+from .models import GameRecords, GameStats
 
 class NotificationManager:
     types = ['normal', 'friend_request', 'match_invite', 'match_result', 'redirection']
@@ -42,8 +43,6 @@ class NotificationManager:
 
     @synchronized_method
     def add_notification(self, user_id, message, payload={}, type='normal', add_to_db=False):
-        print('adding notification, ', user_id, message, payload, type, add_to_db)
-        print("Current queue: ", self.queue)
         if user_id in self.queue:
             self.queue[user_id].append({
                 'message': message,
@@ -217,8 +216,6 @@ class Tournament:
             total_match_time = result['total_match_time']
             loser = None
             winner = None
-            print(game_rooms['game_' + fixture['game_id']])
-            print(game_rooms['game_' + fixture['game_id']]['player1'])
             if player1_score > player2_score:
                 winner = game_rooms['game_' + fixture['game_id']]['player1']['user']
                 loser = game_rooms['game_' + fixture['game_id']]['player2']['user']
@@ -227,7 +224,6 @@ class Tournament:
                 loser = game_rooms['game_' + fixture['game_id']]['player1']['user']
             winner = await self.get_user(winner['user_id'])
             loser = await self.get_user(loser['user_id'])
-            print("loser is ", loser)
             notificationManager.add_notification(loser.id, 'You have lost the game, better luck next time', {"path": "/"}, 'redirection', False)
             
             fixture['game_result'] = {
@@ -241,6 +237,9 @@ class Tournament:
             fixture['winner'] = winner
             print(fixture)
             await self.update_game_room(fixture['game_id'], player1_score, player2_score, winner, total_match_time)
+            await self.update_game_stats(fixture['game_id'], {
+                'heatmap': result['heat_map_of_ball'],
+            })
         if all([i['winner'] is not None for i in self.fixtures[self.current_round]]):
             self.current_available_players = {i['winner'].id: i['winner'] for i in self.fixtures[self.current_round]}
             self.current_round += 1
@@ -408,6 +407,13 @@ class Tournament:
             'total_match_time': total_match_time
         })
     
+    @sync_to_async
+    def update_game_stats(self, game_id, stats):
+        game = GameRecords.objects.get(game_id=game_id)
+        game_stats = GameStats.objects.get(game_record=game)
+        game_stats.stats = stats
+        game_stats.save()
+    
 class TournamentManager:
     tournaments = {}
     started = False
@@ -459,6 +465,7 @@ class TournamentManager:
             final_report = self.tournaments[tournament_id].get_final_report()
             if final_report != 'tournament_is_not_over':
                 players = final_report['players']
+                stats = final_report['stats']
                 for player in players:
                     notificationManager.add_notification(player.id, 'Tournament has ended, the winner is ' + final_report['winner'].username, {
                         'tournament_id': final_report['tournament_id'],

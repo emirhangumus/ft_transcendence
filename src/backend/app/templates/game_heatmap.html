@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto mt-12">
+    <div class="bg-white border border-gray-200 rounded-md p-6">
+        <h1 class="text-2xl font-bold mb-4">Game Stats</h1>
+        
+        <!-- Game Stats -->
+        <p><strong>Game ID:</strong> {{ game_record.game_id }}</p>
+        <p><strong>Player 1 Score:</strong> {{ game_record.player1_score }}</p>
+        <p><strong>Player 2 Score:</strong> {{ game_record.player2_score }}</p>
+        <p><strong>Winner:</strong> 
+            {% if game_record.winner_id %}
+                <a href="/profile/{{ game_record.winner_id }}" style="text-decoration: underline;">{{ game_record.winner_id }}</a>
+            {% else %}
+                None
+            {% endif %}
+        </p>
+        <p><strong>Total Match Time:</strong> {{ game_record.total_match_time }} seconds</p>
+
+        <!-- Heat Map Section -->
+        <h2 class="text-xl font-bold mt-6">Ball Location Heatmap</h2>
+        <div class="heatmap-container">
+            <!-- Embed the generated SVG heatmap -->
+            {{ heatmap_svg|safe }}
+        </div>
+    </div>
+</div>
+{% endblock %}

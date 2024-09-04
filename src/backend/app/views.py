@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render, get_object_or_404
 from django.template.response import TemplateResponse
-from .utils import genResponse, generateRandomID, isValidUsername, generate2FAQRCode, generate_svg_pie_chart
+from .utils import genResponse, generateRandomID, isValidUsername, generate2FAQRCode, generate_svg_pie_chart, validate2FA, generate_svg_heatmap_with_dynamic_size
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts
 from .queries.friend import getFriendState, getFriends
@@ -19,6 +19,7 @@ from .logic import PongGame
 from .consumers import game_rooms, tournamentManager
 import requests
 from django.shortcuts import redirect
+from django.db.models import Count
 
 # Create your views here.
 def serve_dynamic_image(request, filename):
@@ -32,6 +33,67 @@ def serve_dynamic_image(request, filename):
     else:
         raise Http404("Image not found")
 
+class LeaderboardView(APIView):
+    permission_classes = [IsAuthenticated]  # Optionally, require authentication
+
+    def get(self, request):
+        # Aggregate the number of wins for each user
+        leaderboard = (
+            User.objects.filter(gamerecords__winner_id__isnull=False)  # Ensure the user has won games
+            .annotate(win_count=Count('gamerecords__winner_id'))       # Count the wins
+            .order_by('-win_count')[:5]                                # Get the top 5 users
+        )
+
+        # Fetch associated account info and pass it to the template
+        leaderboard_data = []
+        for user in leaderboard:
+            account = Accounts.objects.get(id=user)
+            leaderboard_data.append({
+                'user': user,
+                'wins': user.win_count,
+                'bio': account.bio,
+                'profile_picture_url': account.profile_picture_url,
+            })
+
+        # Determine how many users are being sent
+        num_users = len(leaderboard_data)
+
+        context = {
+            'leaderboard': leaderboard_data,
+            'num_users': num_users,  # Include the number of users in the context
+        }
+
+        return render(request, 'leaderboard.html', context)
+    
+class GameHeatMapView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, game_id):
+        # Fetch the game record
+        game_record = get_object_or_404(GameRecords, game_id=game_id)
+
+        # Fetch ball location data from the game stats
+        game_stats = get_object_or_404(GameStats, game_record=game_record)
+        ball_locations = game_stats.stats.get('heatmap', [])
+
+        # Fetch map dimensions from the GameTypes payload
+        game_type = get_object_or_404(GameTypes, game_record=game_record)
+        map_width = game_type.payload.get('map_width', 800)  # Default to 800 if not found
+        map_height = game_type.payload.get('map_height', 600)  # Default to 600 if not found
+
+        # Generate the heatmap SVG with the correct dimensions
+        heatmap_svg = generate_svg_heatmap_with_dynamic_size(ball_locations, map_width, map_height)
+
+        # Pass the heatmap SVG and other game info to the template
+        context = {
+            'game_record': game_record,
+            'heatmap_svg': heatmap_svg,
+        }
+
+        return TemplateResponse(request, 'game_heatmap.html', context)
+
+
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -39,7 +101,7 @@ class ProfileView(APIView):
         user = request.user
         account = get_object_or_404(Accounts, id=user)
         serializer = AccountSerializer(account)
-        context = {'account': serializer.data, '2fa': generate2FAQRCode('test@test.com')}
+        context = {'account': serializer.data }
         return TemplateResponse(request, 'profile.html', context)
 
     
@@ -58,30 +120,25 @@ class UserProfileView(APIView):
         game_players = GamePlayers.objects.filter(player_id=user)
         game_records = GameRecords.objects.filter(id__in=game_players.values('game_record_id')).order_by('-created_at') 
         game_count = game_records.count()
-        
-        # # Example data for chart (you will likely need to replace this with real data)
-        # chart_data = {
-        #     'data_one': 10,
-        #     'data_two': 20,
-        #     'data_three': 30,
-        # }
 
-        # Calculate wins, losses, and ties
-        wins = game_records.filter(winner_id=user).count()
-        losses = game_records.filter(~models.Q(winner_id=user)).exclude(winner_id=None).count()
-        ties = game_records.filter(winner_id=None).count()
+        # Count wins, losses, and ties
+        wins = game_records.filter(winner_id=user.id).count()
+        losses = game_records.exclude(winner_id=user.id).exclude(winner_id__isnull=True).count()
+        ties = game_records.filter(winner_id__isnull=True).count()
 
-        # Generate SVG chart
-        svg_chart = generate_svg_pie_chart(wins, losses, ties)
+        # Generate SVG pie chart for the statistics
+        chart_svg = generate_svg_pie_chart(wins, losses, ties)
 
-        # Pass the serialized data and chart data to the template
+        # Pass the serialized data, game records, and chart data to the template
         context = {
             'account': account_serializer.data,
             'user': user,
             'records': game_records,
             'count': game_count,
-            'svg_chart': svg_chart,
-            # 'chart_data': chart_data,
+            'chart_svg': chart_svg,
+            'wins': wins,
+            'losses': losses,
+            'ties': ties,
         }
         
         return TemplateResponse(request, 'user_profile.html', context)
@@ -175,6 +232,17 @@ class LoginView(APIView):
             if serializer.is_valid():
                 email = serializer.validated_data['email']
                 user = User.objects.filter(email=email).first()
+                
+                # check the user's 2FA status
+                if Accounts.objects.get(id=user.id).two_factor_auth:
+                    code = request.data.get('code')
+                    if not code:
+                        response = genResponse(False, "two_factor_auth", None)
+                        return Response(response, status=status.HTTP_200_OK)
+                    if not validate2FA(code):
+                        response = genResponse(False, "Two factor authentication failed", None)
+                        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+                
                 refresh = PingPongObtainPairSerializer.get_token(user)
                 t_response = genResponse(True, "User logged in successfully", None)
                 response = Response(t_response, status=status.HTTP_200_OK)
@@ -203,9 +271,10 @@ class TwoFactorAuthView(APIView):
                 return Response(response, status=status.HTTP_200_OK)
             else:
                 Accounts.objects.filter(id=user.id).update(two_factor_auth=True)
-                response = genResponse(True, "Two factor authentication enabled", None)
+                qrcode = generate2FAQRCode(user.email)
+                response = genResponse(True, "Two factor authentication enabled", { 'qrcode': qrcode })
                 return Response(response, status=status.HTTP_200_OK)
-        except Exception as e:
+        except Exception as e:  
             response = genResponse(False, str(e), None)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 

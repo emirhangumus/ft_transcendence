@@ -63,7 +63,45 @@
 					alert(data.message);
 					setCurrentPath('/');
 				} else {
-					alert(data.message);
+					if (data.message == 'two_factor_auth')
+					{
+						popupModel('2FA Code Needed', `
+							<input type="text" id="2fa-code" class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600">
+						`, `
+						<button id="submit-2fa" class="bg-blue-600 text-white py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition-all ease-in-out duration-300 px-4">
+								Submit
+							</button>
+						`);
+
+						const submit2FA = document.getElementById('submit-2fa');
+
+						if (submit2FA) {
+							submit2FA.addEventListener('click', async function onSubmit2FA(event) {
+								const code = document.getElementById('2fa-code').value;
+								const response = await fetch('/api/v1/auth/login/', {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/json'
+									},
+									body: JSON.stringify({
+										code,
+										email,
+										password
+									})
+								});
+								const data = await response.json();
+								if (data.status) {
+									alert(data.message);
+									setCurrentPath('/');
+								} else {
+									alert(data.message);
+								}
+							});
+						}
+
+					} else {
+						alert(data.message);
+					}
 				}
 			});
 		}

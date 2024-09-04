@@ -33,13 +33,10 @@
         <div class="bg-white border border-[#e0e0e0] rounded-md p-6 w-full">
             <h1 class="text-2xl font-bold mb-4">{{ user.first_name }} {{ user.last_name }}'s Profile</h1>
             <img src="{{ account.profile_picture_url|default:'/api/v1/static/register_cat.jpg' }}" alt="Profile Picture" class="rounded-full w-32 h-32 mb-4">
-            <p>
-                {{ 2fa|safe }}
-            </p>
             <p><strong>Bio:</strong> {{ account.bio }}</p>
             <p><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
-            <p><strong>Joined:</strong> {{ account.created_at }}</p>
-            <p><strong>Last Updated:</strong> {{ account.updated_at }}</p>
+            <p><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
+            <p><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
             <p><strong>User Page:</strong> <a href="/profile/{{ user.username }}" style="text-decoration: underline;">{{ user.username }}</a></p>
             <div class="mt-4">
                 <button
@@ -64,10 +61,15 @@
                                 const data = await response.json();
                                 if (data.status) {
                                     if (data.message.includes('disabled')) {
-                                        console.log(window.__model);
-                                        popupModel('2FA Disabled', data.message, 'OK');
+                                        popupModel('2FA Disabled', data.message);
                                     } else {
-                                        popupModel('2FA Enabled', data.message, 'OK');
+                                        popupModel('2FA Enabled', `
+                                            <p>${data.message}</p>
+                                            <p>Kaydettikten sonra kapatabilirsiniz.</p>
+                                            <div class="mt-4">
+                                                ${data.data.qrcode}
+                                            </div>
+                                        `);
                                     }
                                 }
                             });

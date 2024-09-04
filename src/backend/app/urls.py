@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from .views import HomeView, RegisterView, LoginView, TwoFactorAuthView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView, ProfileView, EditProfileView, UserProfileView, TournamentView
+from .views import HomeView, RegisterView, LoginView, TwoFactorAuthView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, GameView, GameCreateView, GamePlayView, TournamentView, TournamentCreateView, ProfileView, EditProfileView, UserProfileView, TournamentView, GameHeatMapView, LeaderboardView
 from . import consumers
 
 urlpatterns = [
@@ -15,6 +15,8 @@ urlpatterns = [
     path('profile/edit/', EditProfileView.as_view(), name='edit_profile'),
     path('profile/<str:username>/', UserProfileView.as_view(), name='user_profile'),
 
+    path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
+
     path('friend/', FriendsView.as_view(), name='friends'),
     
     path('chat/', ChatView.as_view(), name='chat'),
@@ -25,6 +27,8 @@ urlpatterns = [
     path('play/multi', GameView.as_view(), name='play_multi'),
     path('game/create/', GameCreateView.as_view(), name='create_game'),
     path('game/<str:game_id>/', GamePlayView.as_view(), name='game'),
+
+    path('game-history/<str:game_id>/', GameHeatMapView.as_view(), name='game_heatmap'),
     
     path('tournament/', TournamentView.as_view(), name='tournament'),
     path('tournament/new/', TournamentCreateView.as_view(), name='create_tournament'),

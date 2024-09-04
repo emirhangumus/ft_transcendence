@@ -4,8 +4,10 @@ from .utils import threaded
 from .consumers import game_rooms
 import asyncio
 
+
 class PongGame:
     customizations = ["ball_color", "map_width", "map_height", "background_color"]
+    heat_map_of_ball = []
     time = time.time()
     started = False
     stoped = False
@@ -79,7 +81,8 @@ class PongGame:
             "opp_score": self.opp_score,
             "player_score": self.player_score,
             "total_match_time": self.total_match_time,
-            "winner": "player" if self.player_score > self.opp_score else "opponent"
+            "winner": "player" if self.player_score > self.opp_score else "opponent",
+            "heat_map_of_ball": self.heat_map_of_ball
         }
 
     def is_game_tournament(self):
@@ -123,10 +126,23 @@ class PongGame:
     @threaded
     def start(self):
         self.started = True
+        heat_map_timer = time.time()
         while not self.is_game_over and not self.stoped:
             self.update()
+            
+            # every 0.2 seconds update the heat map
+            if time.time() - heat_map_timer >= 0.1:
+                heat_map_timer = time.time()
+                # if its same as the last one dont append
+                if len(self.heat_map_of_ball) == 0 or self.heat_map_of_ball[-1] != [int(self.ball_x), int(self.ball_y)]:
+                    self.heat_map_of_ball.append([int(self.ball_x), int(self.ball_y)])
+                    if len(self.heat_map_of_ball) > 1000:
+                        self.heat_map_of_ball.pop(0)
+            
             #make it 60 fps
             time.sleep(1/60)
+        print(self.heat_map_of_ball)
+        print(len(self.heat_map_of_ball))
         while not self.final_report_taken:
             time.sleep(0.2)
 
@@ -289,3 +305,8 @@ class PongGame:
         if self.opp_score == 5 or self.player_score == 5:
             self.total_match_time = time.time() - self.start_time
             self.is_game_over = True
+            
+    def get_is_multiplayer(self):
+        return self.is_multiplayer
+    
+    

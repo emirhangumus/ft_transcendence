@@ -153,19 +153,41 @@ function generateToast(message, title="", type) {
  */
 function popupModel(title, content, buttons) {
   const modal = document.createElement('div');
-  modal.className = 'modal';
+  modal.style = `
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+  `;
   modal.innerHTML = `
-    <div class="modal-content">
-      <div class="modal-header">
+    <div style="position: fixed;
+    display: flex;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    gap: 1rem;">
+      <div style="padding: 0.5rem; text-align: right;
+      display: flex;
+      justify-content: space-between;">
+        <h2>${title ?? ''}</h2>
         <span class="close">&times;</span>
-        <h2>${title}</h2>
-      </div>
+        </div>
       <div class="modal-body
       ">
-        ${content}
+        ${content ?? ''}
       </div>
-      <div class="modal-footer">
-        ${buttons}
+      <div style="padding: 0.5rem;
+      text-align: right;">
+        ${buttons ?? ''}
       </div>
     </div>
   `;
