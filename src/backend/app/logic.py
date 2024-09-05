@@ -120,6 +120,11 @@ class PongGame:
                 "powerup_revert_opponent_controls": self.powerup_revert_opponent_controls,
                 "skill_ball_freeze": self.skill_ball_freeze,
                 "skill_ball_speed": self.skill_ball_speed
+            },
+            "meta": {
+                "how_many_players": self.how_many_players,
+                "is_tournament": self.is_tournament,
+                "is_multiplayer": self.is_multiplayer
             }
         }
     
@@ -141,8 +146,6 @@ class PongGame:
             
             #make it 60 fps
             time.sleep(1/60)
-        print(self.heat_map_of_ball)
-        print(len(self.heat_map_of_ball))
         while not self.final_report_taken:
             time.sleep(0.2)
 

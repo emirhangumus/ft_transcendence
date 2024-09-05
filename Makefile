@@ -22,6 +22,6 @@ clean:
 	docker compose down --rmi all --volumes --remove-orphans
 
 prune:
-	docker system prune -a --volumes -y
+	docker system prune -a --volumes
 
 .PHONY: all up down logs restart stop clean

@@ -53,7 +53,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({
                         'created_at': message.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                         'message': message.message,
-                        'username': username
+                        'username': username,
+                        'type': message.type,
+                        'payload': message.payload
                     }))
 
     async def disconnect(self, close_code):
@@ -88,7 +90,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'type': 'chat_message',
                         'created_at': message_obj.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                         'message': message_obj.message,
-                        'username': user.username
+                        'username': user.username,
+                        't': message_obj
                     }
                 )
 
@@ -97,8 +100,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = event['username']
         # Mesajı gönder
         await self.send(text_data=json.dumps({
+            'created_at': event['t'].created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'message': message,
-            'username': username
+            'username': username,
+            'type': event['t'].type,
+            'payload': event['t'].payload
         }))
         
     def is_user_in_channel(self, user_id):
@@ -178,6 +184,26 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        
+        # if the user is in user_room_pairs, remove it
+        if self.room_group_name in user_room_pairs:
+            try:
+                index = user_room_pairs[self.room_group_name].index(self.user_data['user_id'])
+                del user_room_pairs[self.room_group_name][index]
+            except ValueError:
+                pass
+        # if the game is not multiplayer, delete the game
+        # if the game is multiplayer, remove the player from the game
+        if game_rooms.get(self.room_group_name) and not game_rooms[self.room_group_name].get('game').get_is_multiplayer():
+            del game_rooms[self.room_group_name]
+        elif game_rooms.get(self.room_group_name) and game_rooms[self.room_group_name].get('player1') and self.channel_name == game_rooms[self.room_group_name]['player1']['self'].channel_name:
+            del game_rooms[self.room_group_name]['player1']
+        elif game_rooms.get(self.room_group_name) and game_rooms[self.room_group_name].get('player2') and self.channel_name == game_rooms[self.room_group_name]['player2']['self'].channel_name:
+            del game_rooms[self.room_group_name]['player2']
+
+        # if the game is not multiplayer and there is no player in the game, delete the game            
+        if game_rooms.get(self.room_group_name) and not game_rooms[self.room_group_name].get('player1') and not game_rooms[self.room_group_name].get('player2'):
+            del game_rooms[self.room_group_name]
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -191,6 +217,8 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def stream_data(self):
         report = None
         while True:
+            if not game_rooms.get(self.room_group_name):
+                break
             current_time = time.time()
             # Generate or fetch your game data to stream
             game_data = {
@@ -215,13 +243,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             if not game_rooms[self.room_group_name]['game'].is_game_tournament():
                 report = game_rooms[self.room_group_name]['game'].get_final_report()
                 if report is not 'final_report_is_already_taken' and report is not 'game_is_not_over':
-                    print("report", report)
                     break
 
             # Wait for a specific interval before sending the next update
             await asyncio.sleep(0.05)  # Adjust the interval as needed | 0.05 is 20 FPS
         
-        if report is not None and report is not 'final_report_is_already_taken':
+        if report is not None and report is not 'final_report_is_already_taken' and type(report) is dict:
             player1_score = report['player_score']
             player2_score = report['opp_score']
             total_match_time = report['total_match_time']
@@ -299,11 +326,20 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             friends = await self.get_user_friends(self.user_id)
             online_friends = []
             for friend in friends:
-                if friend.status:
-                    online_friends.append(friend.id)
-                notificationManager.add_notification(friend.id, f'{self.user_id} entered!', { "username": user.username, "status": True }, 'update_status', False)
+                if friend['accounts'].status:
+                    online_friends.append(friend)
+                notificationManager.add_notification(
+                    friend['user'].id,
+                    f'{self.user_id} entered!',
+                    {
+                        "username": user.username,
+                        "status": True
+                    },
+                    'update_status',
+                    False
+                )
             notifications = await self.get_notifications(self.user_id, 'no')
-            notificationManager.add_notification(self.user_id, f'Online friends', { "online_friends": [friend.username for friend in online_friends] }, 'online_friends', False)
+            notificationManager.add_notification(self.user_id, f'Online friends', { "online_friends": [friend['user'].username for friend in online_friends] }, 'online_friends', False)
             for notification in notifications:
                 message = notification.payload.get('message')
                 notificationManager.add_notification(self.user_id, message, notification.payload, notification.type, False)
@@ -315,17 +351,18 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         tournamentManager.start()
 
     async def disconnect(self, close_code):
+        await self.set_user_status(self.user_id, False)
+        user = await self.get_user(self.user_id)
+        friends = await self.get_user_friends(self.user_id)
+        for friend in friends:
+            notificationManager.add_notification(friend['user'].id, f'{self.user_id} leaved!', { "username": user.username, "status": False }, 'update_status', False)
+        notificationManager.unregister_user(self.user_id)
+
         # Odadan ayrıl
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
-        await self.set_user_status(self.user_id, False)
-        user = await self.get_user(self.user_id)
-        friends = await self.get_user_friends(self.user_id)
-        for friend in friends:
-            notificationManager.add_notification(friend.id, f'{self.user_id} leaved!', { "username": user.username, "status": False }, 'update_status', False)
-        notificationManager.unregister_user(self.user_id)
         
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -350,19 +387,41 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     
     @sync_to_async
     def set_user_status(self, user_id, status):
-        user = User.objects.get(id=user_id)
+        user = Accounts.objects.get(id=user_id)
         user.status = status
         user.save()
-    
+
     @sync_to_async
     def get_user_friends(self, user_id):
         user = User.objects.get(id=user_id)
-        friends = Friendships.objects.filter(Q(sender=user) | Q(receiver=user), status='accepted').values('sender', 'receiver')
-        friends = [friend['sender'] if friend['receiver'] == user.id else friend['receiver'] for friend in friends]
-        friends = Accounts.objects.filter(id__in=friends)
-        if friends:
-            return list(friends)
-        return []
+        
+        # Get the friend relationships involving the user
+        friends_ids = Friendships.objects.filter(
+            Q(sender=user) | Q(receiver=user),
+            status='accepted'
+        ).values_list('sender', 'receiver')
+        
+        # Extract the friend IDs
+        friends_ids = [
+            friend_id[0] if friend_id[1] == user.id else friend_id[1] 
+            for friend_id in friends_ids
+        ]
+        
+        # Get the User objects and their related Accounts in one query
+        friend_accounts = Accounts.objects.filter(id__in=friends_ids)
+        friend_users = User.objects.filter(id__in=friends_ids)
+        
+        # Combine the User and Account objects
+        friends = [
+            {
+                'user': friend_user,
+                'accounts': friend_account
+            }
+            for friend_user, friend_account in zip(friend_users, friend_accounts)
+        ]
+        
+        return friends
+        
     
 class TournamentConsumer(AsyncWebsocketConsumer):
     async def connect(self):

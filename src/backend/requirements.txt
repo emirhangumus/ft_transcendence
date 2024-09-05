@@ -6,3 +6,4 @@ pyotp==2.0.1
 channels==3.0.4
 requests==2.25.1
 qrcode
+Pillow

@@ -4,6 +4,7 @@
 
 {% block content %}
 <style>
+    /* Card styles */
     .h-\[200px\] {
         height: 200px;
     }
@@ -26,117 +27,138 @@
         transform: scale(1.03);
     }
 </style>
+
 <div>
-<h1 class="text-3xl font-semibold text-[#333] mt-4">
-    Hoşgeldiniz, {{ user.username }}!
-</h1>
-<div class="grid grid-cols-9 grid-rows-3 gap-4 mt-4">
-    <a href="/chat" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/chat_image.avif" alt="Chat" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Chat
-            </h2>
-            <p class="text-gray-500 text-sm">
-                Chat with other users.
-            </p>
-        </div>
-    </a>
-    <a href="/friends" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/friends_image.jpeg" alt="Friends" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Friends
-            </h2>
-            <p class="text-gray-500 text-sm">
-                Manage your friends.
-            </p>
-        </div>
-    </a>
-    <a href="/play/ai" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/ai_image.jpeg" alt="Ai" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Play with AI
-            </h2>
-            <p class="text-gray-500 text-sm">
-                Play ping-pong with AI.
-            </p>
-        </div>
-    </a>
-    <a href="/play/multi" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-6 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/multiplayer_image.jpeg" alt="Multi" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Play Multiplayer
-            </h2>
-            <p class="text-gray-500 text-sm">
-                Play ping-pong with other users.
-            </p>
-        </div>
-    </a>
-    <a href="/tournament" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/tour_image.jpeg" alt="Tour" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Tournament
-            </h2>
-            <p class="text-gray-500 text-sm">
-                Create or join a tournament.
-            </p>
-        </div>
-    </a>
-    <a href="/profile" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/manage_profile_image.jpeg" alt="Profile" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Profile
-            </h2>
-            <p class="text-gray-500 text-sm">
-                Manage your profile.
-            </p>
-        </div>
-    </a>
-    <a href="/profile/{{ user.username }}" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/manage_profile_image.jpeg" alt="Profile Chart" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Profile
-            </h2>
-            <p class="text-gray-500 text-sm">
-                View your profile.
-            </p>
-        </div>
-    </a>
-    <a href="/leaderboard" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded gap-4">
-        <div class="row-span-2 h-[200px]">
-            <img src="/api/v1/static/Leaderboard.png" alt="Profile Chart" class="rounded object-cover w-full h-full">
-        </div>
-        <div class="row-span-1 flex flex-col justify-between">
-            <h2 class="text-lg font-semibold text-[#333] mb-2">
-                Leader Board
-            </h2>
-            <p class="text-gray-500 text-sm">
-                View the winners.
-            </p>
-        </div>
-    </a>
+    <h1 class="text-3xl font-semibold text-[#333] mt-4">
+        Welcome, {{ user.username }}!
+    </h1>
+    <div class="grid grid-cols-9 grid-rows-3 gap-4 mt-4">
+        <!-- Chat Card -->
+        <a href="/chat" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/chat_image.avif" alt="Chat" class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Chat
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    Chat with other users.
+                </p>
+            </div>
+        </a>
+
+        <!-- Friends Card -->
+        <a href="/friends" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/friends_image.jpeg" alt="Friends" class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Friends
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    Manage your friends.
+                </p>
+            </div>
+        </a>
+
+        <!-- Play with AI Card -->
+        <a href="/play/ai" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/ai_image.jpeg" alt="AI" class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Play with AI
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    Play ping-pong with AI.
+                </p>
+            </div>
+        </a>
+
+        <!-- Play Multiplayer Card -->
+        <a href="/play/multi" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-6 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/multiplayer_image.jpeg" alt="Multiplayer"
+                    class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Play Multiplayer
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    Play ping-pong with other users.
+                </p>
+            </div>
+        </a>
+
+        <!-- Tournament Card -->
+        <a href="/tournament" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/tour_image.jpeg" alt="Tournament" class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Tournament
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    Create or join a tournament.
+                </p>
+            </div>
+        </a>
+
+        <!-- Manage Profile Card -->
+        <a href="/profile" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/manage_profile_image.jpeg" alt="Profile"
+                    class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Profile
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    Manage your profile.
+                </p>
+            </div>
+        </a>
+
+        <!-- View Profile Card -->
+        <a href="/profile/{{ user.username }}"
+            class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/manage_profile_image.jpeg" alt="Profile Chart"
+                    class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Profile
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    View your profile.
+                </p>
+            </div>
+        </a>
+
+        <!-- Leaderboard Card -->
+        <a href="/leaderboard" class="bendo-card-wrapper border p-4 grid grid-rows-3 gap-2 col-span-3 rounded">
+            <div class="row-span-2 h-[200px]">
+                <img src="/api/v1/static/Leaderboard.png" alt="Leaderboard" class="rounded object-cover w-full h-full">
+            </div>
+            <div class="row-span-1 flex flex-col justify-between">
+                <h2 class="text-lg font-semibold text-[#333] mb-2">
+                    Leader Board
+                </h2>
+                <p class="text-gray-500 text-sm">
+                    View the winners.
+                </p>
+            </div>
+        </a>
+    </div>
 </div>
-</div>
+
 {% endblock %}
 
 {% endif %}

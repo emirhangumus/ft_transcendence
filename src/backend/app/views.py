@@ -8,28 +8,39 @@ from django.shortcuts import render, get_object_or_404
 from django.template.response import TemplateResponse
 from .utils import genResponse, generateRandomID, isValidUsername, generate2FAQRCode, generate_svg_pie_chart, validate2FA, generate_svg_heatmap_with_dynamic_size
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts
+from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts, ChatMessages
 from .queries.friend import getFriendState, getFriends
-from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom
+from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom, getFriendChatRooms
 import os
 from .jwt import PingPongObtainPairSerializer
 from django.conf import settings
 from django.http import HttpResponse, Http404
 from .logic import PongGame
-from .consumers import game_rooms, tournamentManager
-import requests
-from django.shortcuts import redirect
+from .consumers import game_rooms, tournamentManager, notificationManager
 from django.db.models import Count
+from django.shortcuts import redirect
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Create your views here.
 def serve_dynamic_image(request, filename):
     ROOT = settings.STATICFILES_DIRS[0]
     image_path = os.path.join(ROOT, 'images', filename)
+
+    if os.path.exists(image_path):
+        with open(image_path, 'rb') as f:
+            return HttpResponse(f.read(), content_type="image/*")
+    else:
+        raise Http404("Image not found")
+
+def serve_dynamic_media(request, filename):
+    ROOT = settings.MEDIA_ROOT
+    image_path = os.path.join(ROOT, 'profile_pictures', filename)
+
     print(image_path)
 
     if os.path.exists(image_path):
         with open(image_path, 'rb') as f:
-            return HttpResponse(f.read(), content_type="image/jpeg")
+            return HttpResponse(f.read(), content_type="image/*")
     else:
         raise Http404("Image not found")
 
@@ -146,7 +157,7 @@ class UserProfileView(APIView):
 
 class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [JSONParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get(self, request):
         user = request.user
@@ -157,37 +168,68 @@ class EditProfileView(APIView):
             'username': user.username,
         }
         return TemplateResponse(request, 'edit_profile.html', context)
-
+    
     def post(self, request):
         try:
             user = request.user
-            user = User.objects.get(id=user.id)
-            account = Accounts.objects.get(id=user.id)
-            if request.data['username']:
-                if User.objects.filter(username=request.data['username']).exists() and request.data['username'] != user.username:
-                    raise Exception("Username already exists")
-                if not isValidUsername(request.data['username']):
-                    raise Exception("Invalid username")
-                user.username = request.data['username']
-            if request.data['email']:
-                if User.objects.filter(email=request.data['email']).exists() and request.data['email'] != user.email:
-                    raise Exception("Email already exists")
-                user.email = request.data['email']
-            if request.data['first_name']:
-                user.first_name = request.data['first_name']
-            if request.data['last_name']:
-                user.last_name = request.data['last_name']
+            print(user)
+            account = get_object_or_404(Accounts, id=user)
+
+            # Handle form fields
+            user.username = request.data.get('username', user.username)
+            user.first_name = request.data.get('first_name', user.first_name)
+            user.last_name = request.data.get('last_name', user.last_name)
+            user.email = request.data.get('email', user.email)
             user.save()
-            if request.data['bio']:
-                account.bio = request.data['bio']
-            if request.data['profile_picture_url']:
-                account.profile_picture_url = request.data['profile_picture_url']
+
+            # Handle bio
+            account.bio = request.data.get('bio', account.bio)
+
+            # Handle profile picture file if uploaded
+            if 'profile_picture_url' in request.FILES:
+                profile_picture_url = request.FILES['profile_picture_url']
+                account.profile_picture_url = profile_picture_url  # Save the uploaded file to the model
+
             account.save()
-            response = genResponse(True, "Profile updated successfully", None)
-            return Response(response, status=status.HTTP_200_OK)
+
+            return Response({'detail': 'Profile updated successfully'}, status=status.HTTP_200_OK)
+
         except Exception as e:
-            response = genResponse(False, str(e), None)
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # def post(self, request):
+    #     try:
+    #         user = request.user
+    #         user = User.objects.get(id=user.id)
+    #         account = Accounts.objects.get(id=user.id)
+    #         if request.data['username']:
+    #             if User.objects.filter(username=request.data['username']).exists() and request.data['username'] != user.username:
+    #                 raise Exception("Username already exists")
+    #             if not isValidUsername(request.data['username']):
+    #                 raise Exception("Invalid username")
+    #             user.username = request.data['username']
+    #         if request.data['email']:
+    #             if User.objects.filter(email=request.data['email']).exists() and request.data['email'] != user.email:
+    #                 raise Exception("Email already exists")
+    #             user.email = request.data['email']
+    #         if request.data['first_name']:
+    #             user.first_name = request.data['first_name']
+    #         if request.data['last_name']:
+    #             user.last_name = request.data['last_name']
+    #         user.save()
+    #         if request.data['bio']:
+    #             account.bio = request.data['bio']
+    #         # if request.data['profile_picture_url']:
+    #         #     account.profile_picture_url = request.data['profile_picture_url']
+    #         if 'profile_picture_url' in request.FILES:
+    #             profile_picture_url = request.FILES['profile_picture_url']
+    #             account.profile_picture_url = profile_picture_url  # Save the uploaded file to the model
+    #         account.save()
+    #         response = genResponse(True, "Profile updated successfully", None)
+    #         return Response(response, status=status.HTTP_200_OK)
+    #     except Exception as e:
+    #         response = genResponse(False, str(e), None)
+    #         return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
 class HomeView(APIView):
@@ -398,7 +440,40 @@ class GamePlayView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, game_id=None):
-        return TemplateResponse(request, 'game/play.html', {'game': { "id": game_id }})
+        user = request.user
+        if not game_id or not game_rooms.get('game_' + game_id):
+            notificationManager.add_notification(user, 'There is no game like that.', {"path": "/"}, 'redirection', False)
+            return redirect('/')
+        isMultiplayer = game_rooms['game_' + game_id]['game'].get_is_multiplayer()
+        isTournament = game_rooms['game_' + game_id]['game'].is_game_tournament()
+        if isMultiplayer and not isTournament:
+            friend_dict = getFriends(request.user)
+        else:
+            friend_dict = {}
+        return TemplateResponse(request, 'game/play.html', {'game': { "id": game_id }, "render_friends": {
+            "render": isMultiplayer and not isTournament,
+            "friends": friend_dict
+        }})
+        
+class GameInviteView(APIView):
+    parser_classes = [JSONParser]
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, game_id, username):
+        try:
+            room = getFriendChatRooms(request.user, username)
+            if not room:
+                response = genResponse(False, "User not found", None)
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
+            # send game invite
+            target_user = User.objects.get(username=username)
+            notificationManager.add_notification(target_user.id, 'Game invite', {"game_id": game_id}, 'match_invite', True)
+            ChatMessages(room=room, sender=request.user, message='Game invite', type='match_invite', payload={"game_id": game_id}).save()
+            response = genResponse(True, "Game joined successfully", None)
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as e:
+            response = genResponse(False, str(e), None)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 class GameCreateView(APIView):
     parser_classes = [JSONParser]
@@ -406,7 +481,6 @@ class GameCreateView(APIView):
 
     def post(self, request):
         try:
-            print(request.data)
             serilizer = GameCreationSerilizer(data=request.data)
             if serilizer.is_valid():
                 user = request.user

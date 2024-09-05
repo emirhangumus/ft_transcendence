@@ -112,8 +112,13 @@ class FriendRequestActionsSerializer(serializers.Serializer):
                         return data
                     else:
                         raise serializers.ValidationError("Friend request not found")
-                elif action == 'remove':
+                elif action == 'remove' or action == 'block':
                     if self.context['request'].user.friendships_sender_set.filter(receiver=target).exists() or self.context['request'].user.friendships_receiver_set.filter(sender=target).exists():
+                        return data
+                    else:
+                        raise serializers.ValidationError("Friend request not found")
+                elif action == 'unblock':
+                    if self.context['request'].user.friendships_sender_set.filter(receiver=target, status='blocked').exists() or self.context['request'].user.friendships_receiver_set.filter(sender=target, status='blocked').exists():
                         return data
                     else:
                         raise serializers.ValidationError("Friend request not found")
@@ -155,6 +160,30 @@ class FriendRequestActionsSerializer(serializers.Serializer):
                 chatroom = ChatRooms.objects.filter(name=f"{user.username}-{target.username}", can_leave=False).first()
                 if chatroom:
                     deleteChatRoom(chatroom.id)
+        elif action == 'block':
+            try:
+                friendship = user.friendships_sender_set.get(receiver=target)
+            except Exception:
+                friendship = target.friendships_sender_set.get(receiver=user)
+                pass
+
+            if friendship:
+                friendship.status = 'blocked'
+                friendship.blocked_by = user
+                friendship.save()
+                # find the chat room and delete it
+                chatroom = ChatRooms.objects.filter(name=f"{user.username}-{target.username}", can_leave=False).first()
+                if chatroom:
+                    deleteChatRoom(chatroom.id)
+        elif action == 'unblock':
+            try:
+                friendship = user.friendships_sender_set.get(receiver=target)
+            except Exception:
+                friendship = target.friendships_sender_set.get(receiver=user)
+                pass
+            if friendship and friendship.blocked_by == user:
+                friendship.status = 'accepted'
+                friendship.save()
         return friendship
     
 

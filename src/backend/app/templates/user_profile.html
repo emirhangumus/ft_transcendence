@@ -3,39 +3,50 @@
 {% block content %}
 <div class="container mx-auto mt-12">
     <div class="bg-white border border-gray-200 rounded-md p-6">
-        <h1 class="text-2xl font-bold mb-4">{{ user.username }}'s Profile</h1>
-        <img src="{{ account.profile_picture_url }}" alt="Profile Picture" class="rounded-full w-32 h-32 mb-4">
-        <p><strong>Username:</strong> {{ user.username }}</p>
-        <p><strong>First Name:</strong> {{ user.first_name }}</p>
-        <p><strong>Last Name:</strong> {{ user.last_name }}</p>
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <p><strong>Bio:</strong> {{ account.bio }}</p>
-        <p><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
-        <p><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
-        <p><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
+        <!-- Profile Header -->
+        <div class="flex items-center mb-6">
+            <img src="{{ account.profile_picture_url }}" alt="Profile Picture" class="rounded-full w-32 h-32 mr-4">
+            <div>
+                <h1 class="text-2xl font-bold mb-2">{{ user.username }}'s Profile</h1>
+                <p class="text-gray-600"><strong>Username:</strong> {{ user.username }}</p>
+                <p class="text-gray-600"><strong>First Name:</strong> {{ user.first_name }}</p>
+                <p class="text-gray-600"><strong>Last Name:</strong> {{ user.last_name }}</p>
+                <p class="text-gray-600"><strong>Email:</strong> {{ user.email }}</p>
+            </div>
+        </div>
+
+        <!-- Bio and Status -->
+        <div class="mb-6">
+            <p class="text-gray-600"><strong>Bio:</strong> {{ account.bio }}</p>
+            <p class="text-gray-600"><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
+            <p class="text-gray-600"><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
+            <p class="text-gray-600"><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
+        </div>
 
         <!-- Game Statistics -->
-        <h2 class="text-xl font-bold mt-6">Games Records: {{ count }}</h2>
-        <div>{{ chart_svg|safe }}</div>  <!-- Render the SVG chart here -->
-        <ul>
-        {% for game in records %}
-            <li>
-                <p>----------------------------------------------------------------------------------------</p>
-                <p><strong>Game ID:</strong> <a href="/game-history/{{game.game_id}}" style="text-decoration: underline;">{{ game.game_id }}</a> </p>
-                <p><strong>Player 1 Score:</strong> {{ game.player1_score }}</p>
-                <p><strong>Player 2 Score:</strong> {{ game.player2_score }}</p>
-                <p><strong>Winner:</strong> 
-                    {% if game.winner_id %}
-                        <a href="/profile/{{ game.winner_id }}" style="text-decoration: underline;">{{ game.winner_id }}</a>
-                    {% else %}
-                        None
-                    {% endif %}
-                </p>
-                <p><strong>Total Match Time:</strong> {{ game.total_match_time }}</p>
-                <p>----------------------------------------------------------------------------------------</p>
-            </li>
-        {% endfor %}
-        </ul>
+        <div>
+            <h2 class="text-xl font-bold mb-4">Games Records: {{ count }}</h2>
+            <div class="mb-6">
+                {{ chart_svg|safe }}  <!-- Render the SVG chart here -->
+            </div>
+            <ul class="space-y-4">
+            {% for game in records %}
+                <li class="border border-gray-200 p-4 rounded-md bg-gray-50">
+                    <p class="mb-2"><strong>Game ID:</strong> <a href="/game-history/{{ game.game_id }}" class="text-blue-500 hover:underline">{{ game.game_id }}</a></p>
+                    <p class="mb-2"><strong>Player 1 Score:</strong> {{ game.player1_score }}</p>
+                    <p class="mb-2"><strong>Player 2 Score:</strong> {{ game.player2_score }}</p>
+                    <p class="mb-2"><strong>Winner:</strong> 
+                        {% if game.winner_id %}
+                            <a href="/profile/{{ game.winner_id }}" class="text-blue-500 hover:underline">{{ game.winner_id }}</a>
+                        {% else %}
+                            None
+                        {% endif %}
+                    </p>
+                    <p class="mb-2"><strong>Total Match Time:</strong> {{ game.total_match_time }}</p>
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
     </div>
 </div>
 

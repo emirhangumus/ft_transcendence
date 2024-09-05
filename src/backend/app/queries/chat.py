@@ -85,3 +85,18 @@ def deleteChatRoom(roomId):
     # delete the room
     ChatRooms.objects.filter(id=roomId).delete()
     return True
+
+def getFriendChatRooms(username1, username2):
+    user1 = User.objects.filter(username=username1).first()
+    user2 = User.objects.filter(username=username2).first()
+    if not user1 or not user2:
+        return None
+    chatRoom = ChatRooms.objects.filter(can_leave=False)
+    the_chat_room = None
+    for room in chatRoom:
+        chatUsers = ChatUsers.objects.filter(room=room)
+        if chatUsers:
+            if chatUsers.filter(user=user1) and chatUsers.filter(user=user2):
+                the_chat_room = room
+                break
+    return the_chat_room

@@ -3,43 +3,32 @@
 {% if user.is_authenticated %}
 
 {% block content %}
-<style>
-    .min-h-\[900px\] {
-        min-height: 900px;
-    }
-
-    .bg-\[#f5f5f5\] {
-        background-color: #f5f5f5;
-    }
-
-    .border-\[#e0e0e0\] {
-        border-color: #e0e0e0;
-    }
-    
-</style>
 <div class="grid grid-cols-12 mt-12 h-full min-h-[900px]">
-    <div class="col-span-3 bg-[#f5f5f5] border-r border-[#e0e0e0] flex flex-col justify-between items-center p-4">
-        <div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4 flex-1">
+    <div class="col-span-3 bg-gray-100 border-r border-gray-300 flex flex-col p-4">
+        <div class="w-full bg-white border border-gray-300 rounded-lg p-4 flex-1 space-y-4">
             {% for room in chatRooms %}
             <a href="/chat/{{ room.chat_id }}"
-                class="w-full bg-[#f5f5f5] hover:bg-[#e0e0e0] border-b border-[#e0e0e0] p-2 text-center flex">
-                {{ room.name }}
-                <div>
-                    {% if room.can_leave %}
-                    <button class="bg-[#f5f5f5] hover:bg-[#e0e0e0] border border-[#e0e0e0] p-1 rounded-md">Leave</button>
-                    {% endif %}
-                </div>
+               class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition duration-200">
+                <span class="font-semibold text-gray-800">{{ room.name }}</span>
+                {% if room.can_leave %}
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                    Leave
+                </button>
+                {% endif %}
             </a>
             {% endfor %}
         </div>
-        <a href="/chat/new" class="w-full bg-[#f5f5f5] hover:bg-[#e0e0e0] border-b border-[#e0e0e0] p-2 text-center">Create ChatRoom</a>
+        <a href="/chat/new"
+           class="mt-4 block text-center text-blue-600 border border-blue-600 rounded-lg py-2 hover:bg-blue-600 hover:text-white transition duration-200">
+            Create ChatRoom
+        </a>
     </div>
-    <div class="col-span-9 bg-[#f5f5f5] border-l border-[#e0e0e0] flex flex-col justify-between items-center p-4">
+    <div class="col-span-9 bg-gray-100 border-l border-gray-300 flex flex-col p-4">
         {% if chatRoom %}
             {% include 'chat_room.html' %}
         {% else %}
-        <div class="col-span-9 bg-[#f5f5f5] flex flex-col justify-between items-center p-4">
-            <p>No chat room selected</p>
+        <div class="flex flex-col justify-center items-center p-4">
+            <p class="text-gray-600 text-lg">No chat room selected</p>
         </div>
         {% endif %}
     </div>

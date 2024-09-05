@@ -84,3 +84,7 @@
 .model-footer {
     border-top: 1px solid #ccc;
 }
+
+.min-h-\[75vh\] {
+    min-height: 75vh;
+}

@@ -51,7 +51,7 @@ const ROUTES = parseRoutes({
         endpoint: '/api/v1/profile/:username'  // New route to view a profile by username
     },
     '/game-history/:id(6)': {
-        endpoint: '/api/v1/game-history/:id' 
+        endpoint: '/api/v1/game-history/:id'
     },
     '/leaderboard': {
         endpoint: '/api/v1/leaderboard'
@@ -118,7 +118,7 @@ async function renewAccessToken() {
     const cookies = parseCookie(document.cookie);
 
     if (!cookies['refresh_token']) {
-        return ;
+        return;
     }
 
     const init = {
@@ -137,7 +137,7 @@ async function renewAccessToken() {
     try {
         x = await x.json();
         if (x.access) {
-            setCookie('access_token', x.access, 3600000); 
+            setCookie('access_token', x.access, 3600000);
         }
     } catch (e) {
         console.error("Failed to renew access token");
@@ -165,27 +165,31 @@ function notificationFunc() {
                 const no = data.notification;
                 if (no.type == 'redirection') {
                     setCurrentPath(no.payload.path);
-                    return ;
+                    return;
                 }
-                const el = document.createElement('li');
                 if (no.type == 'normal') {
+                    const el = document.createElement('li');
                     el.innerHTML = `<div>${no.message}</div>`;
+                    notificationList.appendChild(el);
+                } else {
+                    if (no.type == 'online_friends') {
+                        setOnlineFriends(no.payload.online_friends);
+                        lookForFriendStatuses();
+                    }
+                    if (no.type == 'update_status') {
+                        let online_friends = [...onlineFriends()]
+                        if (no.payload.status)
+                            online_friends.push(no.payload.username);
+                        else
+                            online_friends = online_friends.filter(e => e !== no.payload.username);
+                        console.log("Online friends", online_friends);
+                        setOnlineFriends(online_friends);
+                        lookForFriendStatuses();
+                    }
                 }
+            }
 
-                notificationList.appendChild(el);
-            }
-            if (data.type == 'online_friends')
-                setOnlineFriends(data.payload.online_friends);
-            if (data.type == 'update_status')
-            {
-                let online_friends = [...onlineFriends]
-                if (data.payload.status)
-                    online_friends.push(data.payload.username);
-                else
-                    online_friends = online_friends.filter(e => e !== data.payload.username);
-                setOnlineFriends(online_friends);
-            }
-            
+
             console.log('WebSocket message received:', data);
         }
 
@@ -200,8 +204,7 @@ function notificationFunc() {
     }
 }
 
-function lookForFriendStatuses()
-{
+function lookForFriendStatuses() {
     circles = document.getElementsByClassName('friendStatusCircle');
     for (let i = 0; i < circles.length; i++) {
         const username = circles[i].getAttribute('data-username');
@@ -219,8 +222,7 @@ function runAfterRender() {
     lookForFriendStatuses();
 }
 
-function setPage()
-{
+function setPage() {
     console.log(ROUTES, currentPath());
     const path = getEndpoint(ROUTES, currentPath());
     console.log("->", path);
@@ -241,29 +243,36 @@ function setPage()
 
         fetch(path, init).then(async (res) => {
             const t = await res.text();
+            console.log("Response", res.status, t);
+            if (res.status == 301 || res.status == 302) {
+                console.log("Redirecting to or '/chat'", res.headers.get('Location'));
+                const location = res.headers.get('Location');
+                setCurrentPath('/chat');
+                return;
+            }
 
             try {
                 const json = JSON.parse(t);
                 if (json && res.status == 401 && json.detail === 'Authentication credentials were not provided.') {
                     deleteAllCookies();
                     setCurrentPath('/login');
-                    return ;
+                    return;
                 }
                 else if (json && json.code && json.code === 'token_not_valid') {
                     if (MAX_TRIES === 0) {
                         deleteAllCookies();
                         setCurrentPath('/login');
-                        return ;
+                        return;
                     }
                     await renewAccessToken();
                     MAX_TRIES--;
                     setPage();
-                    return ;
+                    return;
                 }
                 if (json && json.code && json.code === 'user_not_found') {
                     deleteAllCookies();
                     setCurrentPath('/login');
-                    return ;
+                    return;
                 }
             } catch (e) {
                 // do nothing
@@ -283,7 +292,7 @@ function setPage()
         })
     }
     else {
-        body.innerHTML = "404 Not Found";
+        body.innerHTML = generate404()
     }
 }
 

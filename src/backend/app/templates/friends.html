@@ -3,160 +3,203 @@
 {% if user.is_authenticated %}
 
 {% block content %}
-<div>
-    arkadaşlık yeri
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold mb-4">Arkadaşlık Yeri</h1>
 
-    <form id="send-friend-request-form">
+    <form id="send-friend-request-form" class="mb-6">
         {% csrf_token %}
-        <input type="text" name="username" placeholder="username" id="send-friend-request-form-username"
-            class="border-black rounded px-2 py-1 shadow focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent">
-        <input type="submit" value="add friend"
-            class="border-black rounded px-2 py-1 shadow focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent hover:bg-blue-600 hover:text-white">
+        <div class="flex items-center space-x-4">
+            <input type="text" name="username" placeholder="Username" id="send-friend-request-form-username"
+                class="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64">
+            <input type="submit" value="Add Friend"
+                class="bg-blue-600 text-white rounded-lg px-4 py-2 shadow-sm hover:bg-blue-700 transition duration-150">
+        </div>
     </form>
 
-    <div class="border-black rounded grid grid-cols-3">
-        <div class="border-black rounded flex flex-col justify-center items-center">
-            <h2>friends</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <!-- Friends Section -->
+        <div class="border border-gray-300 rounded-lg p-4 shadow-sm">
+            <h2 class="text-xl font-medium mb-4">Friends</h2>
             {% for friend in friends %}
-            <div class="flex justify-between items-center bg-zinc-100 rounded px-2 py-1 shadow border">
-                <div class="flex justify-center items-center">
-                    <a href="/profile/{{ friend.username }}" style="text-decoration: underline;">{{ friend.username }}</a>
-                    <!-- {{ friend.username }} -->
+            <div class="flex justify-between items-center bg-gray-100 rounded-lg px-4 py-2 mb-2 shadow-sm border border-gray-300">
+                <div class="flex items-center space-x-2">
+                    <a href="/profile/{{ friend.username }}" class="text-blue-600 underline">{{ friend.username }}</a>
                 </div>
-                <div class="flex justify-center items-center">
-                    <button class="border-black rounded flex justify-center items-center bg-blue-600 text-white px-1">
-                        chat
+                <div class="flex space-x-2">
+                    <a href="/chat/{{ friend.username }}" class="bg-blue-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-blue-700 transition duration-150">
+                        Chat
+                    </a>
+                    <button class="remove-friend bg-red-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-red-700 transition duration-150" data-username="{{ friend.username }}">
+                        Remove
                     </button>
-                    <button class="remove-friend border-black rounded flex justify-center items-center bg-red-600 text-white px-1" data-username="{{ friend.username }}">
-                        remove
+                    <button class="block-friend bg-amber-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-red-700 transition duration-150" data-username="{{ friend.username }}">
+                        Block
                     </button>
                 </div>
-                <div class="friendStatusCircle w-4 h-4 rounded-full bg-yellow-500" data-username="{{ friend.username }}"></div>
+                <div class="friendStatusCircle animate-pulse w-4 h-4 rounded-full bg-yellow-500" data-username="{{ friend.username }}"></div>
             </div>
             {% endfor %}
-            <script>
-                {
-                    const removeFriendButtons = document.querySelectorAll('.remove-friend');
-                    removeFriendButtons.forEach((button) => {
-                        button.addEventListener('click', async function onRemoveFriendClick(event) {
-                            const username = button.getAttribute('data-username');
-                            const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=remove`, {
-                                method: 'PATCH',
-                            });
-                            const data = await response.json();
-                            if (data.status) {
-                                alert(data.message);
-                                setPage();
-                            } else {
-                                alert(data.message);
-                            }
-                        });
-                    });
-                }
-            </script>
         </div>
-        <div class="border-black rounded flex flex-col justify-center items-center">
-            <h2>friend requests</h2>
-            {% for friendRequest in friendRequests %}
-            <div class="flex justify-between items-center bg-zinc-100 rounded px-2 py-1 shadow border">
-                <div class="flex justify-center items-center">
-                    {{ friendRequest.username }}
-                </div>
-                <div>
-                    <button
-                        class="accept-friend-request-button border-black rounded flex justify-center items-center bg-blue-600 text-white px-1"
-                        data-username="{{ friendRequest.username }}">
-                        accept
-                    </button>
-                </div>
-                <div>
-                    <button
-                        class="reject-friend-request-button border-black rounded flex justify-center items-center bg-red-600 text-white px-1"
-                        data-username="{{ friendRequest.username }}">
-                        reject
-                    </button>
-                </div>
-            </div>
-            {% endfor %}
-            <script>
-                {
-                    const rejectFriendRequestButtons = document.querySelectorAll('.reject-friend-request-button');
-                    rejectFriendRequestButtons.forEach((button) => {
-                        button.addEventListener('click', async function onRejectFriendRequestClick(event) {
-                            const username = button.getAttribute('data-username');
-                            const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=reject`, {
-                                method: 'PATCH',
-                            });
-                            const data = await response.json();
-                            if (data.status) {
-                                alert(data.message);
-                                setPage();
-                            } else {
-                                alert(data.message);
-                            }
-                        });
-                    });
 
-                    const acceptFriendRequestButtons = document.querySelectorAll('.accept-friend-request-button');
-                    acceptFriendRequestButtons.forEach((button) => {
-                        button.addEventListener('click', async function onAcceptFriendRequestClick(event) {
-                            const username = button.getAttribute('data-username');
-                            const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=accept`, {
-                                method: 'PATCH',
-                            });
-                            const data = await response.json();
-                            if (data.status) {
-                                alert(data.message);
-                                setPage();
-                            } else {
-                                alert(data.message);
-                            }
-                        });
-                    });
-                }
-            </script>
-        </div>
-        <div class="border-black rounded flex flex-col justify-center items-center">
-            <h2>sent friend requests</h2>
-            {% for sentFriendRequest in sentFriendRequests %}
-            <div class="flex justify-between items-center bg-zinc-100 rounded px-2 py-1 shadow border">
-                <div class="flex justify-center items-center">
-                    {{ sentFriendRequest.username }}
+        <!-- Friend Requests Section -->
+        <div class="border border-gray-300 rounded-lg p-4 shadow-sm">
+            <h2 class="text-xl font-medium mb-4">Friend Requests</h2>
+            {% for friendRequest in friendRequests %}
+            <div class="flex justify-between items-center bg-gray-100 rounded-lg px-4 py-2 mb-2 shadow-sm border border-gray-300">
+                <div class="flex items-center space-x-2">
+                    <span>{{ friendRequest.username }}</span>
                 </div>
-                <div class="flex justify-center items-center">
-                    <button
-                        class="cancel-friend-request-button border-black rounded flex justify-center items-center bg-red-600 text-white px-1"
-                        data-username="{{ sentFriendRequest.username }}">
-                        cancel
+                <div class="flex space-x-2">
+                    <button class="accept-friend-request-button bg-blue-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-blue-700 transition duration-150" data-username="{{ friendRequest.username }}">
+                        Accept
+                    </button>
+                    <button class="reject-friend-request-button bg-red-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-red-700 transition duration-150" data-username="{{ friendRequest.username }}">
+                        Reject
                     </button>
                 </div>
             </div>
             {% endfor %}
-            <script>
-                {
-                    const cancelFriendRequestButtons = document.querySelectorAll('.cancel-friend-request-button');
-                    cancelFriendRequestButtons.forEach((button) => {
-                        button.addEventListener('click', async function onCancelFriendRequestClick(event) {
-                            const username = button.getAttribute('data-username');
-                            const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=cancel`, {
-                                method: 'PATCH',
-                            });
-                            const data = await response.json();
-                            if (data.status) {
-                                alert(data.message);
-                                setPage();
-                            } else {
-                                alert(data.message);
-                            }
-                        });
-                    });
-                }
-            </script>
+        </div>
+
+        <!-- Sent Friend Requests Section -->
+        <div class="border border-gray-300 rounded-lg p-4 shadow-sm">
+            <h2 class="text-xl font-medium mb-4">Sent Friend Requests</h2>
+            {% for sentFriendRequest in sentFriendRequests %}
+            <div class="flex justify-between items-center bg-gray-100 rounded-lg px-4 py-2 mb-2 shadow-sm border border-gray-300">
+                <div class="flex items-center space-x-2">
+                    <span>{{ sentFriendRequest.username }}</span>
+                </div>
+                <div>
+                    <button class="cancel-friend-request-button bg-red-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-red-700 transition duration-150" data-username="{{ sentFriendRequest.username }}">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Blocked Friends Section -->
+        <div class="border border-gray-300 rounded-lg p-4 shadow-sm">
+            <h2 class="text-xl font-medium mb-4">Blocked Friends</h2>
+            {% for blockedFriend in blockedFriends %}
+            <div class="flex justify-between items-center bg-gray-100 rounded-lg px-4 py-2 mb-2 shadow-sm border border-gray-300">
+                <div class="flex items-center space-x-2">
+                    <span>{{ blockedFriend.username }}</span>
+                </div>
+                <div>
+                    <button class="unblock-friend-button bg-red-600 text-white rounded-lg px-2 py-1 shadow-sm hover:bg-red-700 transition duration-150" data-username="{{ blockedFriend.username }}">
+                        Unblock
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
 
     <script>
         {
+            const unblockFriendButtons = document.querySelectorAll('.unblock-friend-button');
+            unblockFriendButtons.forEach((button) => {
+                button.addEventListener('click', async function onUnblockFriendClick(event) {
+                    const username = button.getAttribute('data-username');
+                    const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=unblock`, {
+                        method: 'PATCH',
+                    });
+                    const data = await response.json();
+                    if (data.status) {
+                        alert(data.message);
+                        setPage();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            const blockFriendButtons = document.querySelectorAll('.block-friend');
+            blockFriendButtons.forEach((button) => {
+                button.addEventListener('click', async function onBlockFriendClick(event) {
+                    const username = button.getAttribute('data-username');
+                    const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=block`, {
+                        method: 'PATCH',
+                    });
+                    const data = await response.json();
+                    if (data.status) {
+                        alert(data.message);
+                        setPage();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            const removeFriendButtons = document.querySelectorAll('.remove-friend');
+            removeFriendButtons.forEach((button) => {
+                button.addEventListener('click', async function onRemoveFriendClick(event) {
+                    const username = button.getAttribute('data-username');
+                    const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=remove`, {
+                        method: 'PATCH',
+                    });
+                    const data = await response.json();
+                    if (data.status) {
+                        alert(data.message);
+                        setPage();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            const rejectFriendRequestButtons = document.querySelectorAll('.reject-friend-request-button');
+            rejectFriendRequestButtons.forEach((button) => {
+                button.addEventListener('click', async function onRejectFriendRequestClick(event) {
+                    const username = button.getAttribute('data-username');
+                    const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=reject`, {
+                        method: 'PATCH',
+                    });
+                    const data = await response.json();
+                    if (data.status) {
+                        alert(data.message);
+                        setPage();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            const acceptFriendRequestButtons = document.querySelectorAll('.accept-friend-request-button');
+            acceptFriendRequestButtons.forEach((button) => {
+                button.addEventListener('click', async function onAcceptFriendRequestClick(event) {
+                    const username = button.getAttribute('data-username');
+                    const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=accept`, {
+                        method: 'PATCH',
+                    });
+                    const data = await response.json();
+                    if (data.status) {
+                        alert(data.message);
+                        setPage();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
+            const cancelFriendRequestButtons = document.querySelectorAll('.cancel-friend-request-button');
+            cancelFriendRequestButtons.forEach((button) => {
+                button.addEventListener('click', async function onCancelFriendRequestClick(event) {
+                    const username = button.getAttribute('data-username');
+                    const response = await fetchAPI(`/api/v1/friend/?username=${username}&action=cancel`, {
+                        method: 'PATCH',
+                    });
+                    const data = await response.json();
+                    if (data.status) {
+                        alert(data.message);
+                        setPage();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            });
+
             const form = document.getElementById('send-friend-request-form');
             if (form) {
                 form.addEventListener('submit', async function onSendFriendRequestSubmit(event) {

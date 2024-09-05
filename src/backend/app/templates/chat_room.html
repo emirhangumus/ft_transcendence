@@ -1,45 +1,62 @@
-<div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4">
-    <p class="font-bold">{{ chatRoom.name }}</p>
+<div class="w-full bg-white border border-gray-300 rounded-lg p-4 mb-4">
+    <p class="text-lg font-semibold text-gray-800">{{ chatRoom.name }}</p>
 </div>
-<div class="min-h-[900px] w-full flex-1 bg-white border border-[#e0e0e0] rounded-md p-4 overflow-y-auto" id="chat-log">
-    <p id="there-is-no-message">There is no message</p>
+<div class="max-h-[900px] w-full flex-1 bg-white border border-gray-300 rounded-lg p-4 overflow-y-auto" id="chat-log">
+    <p id="there-is-no-message" class="text-gray-600">There is no message</p>
 </div>
-<form class="w-full flex justify-between items-center" id="chat-form-messsager">
-    <input type="text" name="content" class="w-4/5 h-full border border-[#e0e0e0] rounded-md p-2" id="chat-message-input">
-    <button id="chat-message-submit"
-        class="w-1/5 h-full bg-[#f5f5f5] hover:bg-[#e0e0e0] border border-[#e0e0e0] p-2 rounded-md">Send</button>
+<form class="w-full flex space-x-2 mt-4" id="chat-form-messsager">
+    <input type="text" name="content" class="flex-grow border border-gray-300 rounded-lg p-2" id="chat-message-input" placeholder="Type your message...">
+    <button id="chat-message-submit" class="flex-shrink-0 w-1/5 bg-blue-600 text-white rounded-lg p-2 hover:bg-blue-700 transition duration-200">
+        Send
+    </button>
     <input type="hidden" name="chat_id" id="chatID" value="{{ chatRoom.chat_id }}">
 </form>
 <script>
 {
     const messageTemplate = (user, message, created_at) => `
-    <div class="flex justify-between items-center">
+    <div class="flex justify-between items-start mb-4">
         <div>
-            <a href="/profile/${user}" class="font-bold">${user}</a>
-            <p>${message}</p>
+            <a href="/profile/${user}" class="font-semibold text-blue-600 hover:underline">${user}</a>
+            <p class="text-gray-800">${message}</p>
         </div>
-        <div>
+        <div class="text-sm text-gray-500">
             <p>${new Date(created_at).toLocaleString()}</p>
         </div>
     </div>
     `;
-    
+
+    const matchInviteTemplate = (user, message, inviteLink, created_at) => `
+    <div class="flex justify-between items-start mb-4">
+        <div>
+            <a href="/profile/${user}" class="font-semibold text-blue-600 hover:underline">${user}</a>
+            <p class="text-gray-800">${message}</p>
+            <a href="/game/${inviteLink}" class="text-blue-600 hover:underline">Join</a>
+        </div>
+        <div class="text-sm text-gray-500">
+            <p>${new Date(created_at).toLocaleString()}</p>
+        </div>
+    </div>
+    `;
+
     const roomID = document.getElementById('chatID').value;
     const log = document.getElementById('chat-log');
     const thereIsNoMessage = document.getElementById('there-is-no-message');
-    
+
     const chatSocket = new WebSocket(
         'wss://'
         + window.location.host
         + '/api/v1/chat/'
         + roomID
         + '/ws/'
-    ); // -> ws://localhost:8000/api/v1/chat/1/ws/
+    ); 
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         thereIsNoMessage.style.display = 'none';
-        log.innerHTML += messageTemplate(data.username, data.message, data.created_at ?? new Date());
+        if (data.type == 'normal')
+            log.innerHTML += messageTemplate(data.username, data.message, data.created_at ?? new Date());
+        else if (data.type == 'match_invite')
+            log.innerHTML += matchInviteTemplate(data.username, data.message, data.payload.game_id, data.created_at ?? new Date());
         disableAllAnchorTags();
     };
 

@@ -7,20 +7,12 @@
     .min-h-\[900px\] {
         min-height: 900px;
     }
-
-    .bg-\[#f5f5f5\] {
-        background-color: #f5f5f5;
-    }
-
-    .border-\[#e0e0e0\] {
-        border-color: #e0e0e0;
-    }
 </style>
 <div class="grid grid-cols-12 mt-12 h-full min-h-[900px]">
     <!-- Sidebar Section -->
-    <div class="col-span-3 bg-[#f5f5f5] border-r border-[#e0e0e0] flex flex-col justify-between items-center p-4">
-        <div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4 flex-1">
-            <h2 class="text-center font-bold">Profile Navigation</h2>
+    <div class="col-span-3 flex flex-col justify-between items-center">
+        <div class="w-full bg-white rounded-md flex-1">
+            <h2 class="text-lg font-bold text-center mb-4">Profile Navigation</h2>
             <ul class="mt-4">
                 <li class="mb-2"><a href="/profile/" class="text-blue-500 hover:underline">View Profile</a></li>
                 <li class="mb-2"><a href="/profile/edit" class="text-blue-500 hover:underline">Edit Profile</a></li>
@@ -29,8 +21,8 @@
     </div>
 
     <!-- Profile Edit Form Section -->
-    <div class="col-span-9 bg-[#f5f5f5] border-l border-[#e0e0e0] p-4">
-        <div class="bg-white border border-[#e0e0e0] rounded-md p-6 w-full">
+    <div class="col-span-9 border-l px-4">
+        <div class="bg-white rounded-md w-full">
             <h1 class="text-2xl font-bold mb-4">Edit {{ user.first_name }} {{ user.last_name }}'s Profile</h1>
             <form id="change-profile" class="bg-white rounded px-8 pt-6 pb-8 mb-4">
                 {% csrf_token %}
@@ -59,10 +51,15 @@
                     <textarea name="bio" id="id_bio"
                         class="border border-gray-300 p-2 w-full rounded-md">{{ account.bio }}</textarea>
                 </div>
-                <div class="form-group mb-4">
+                <!-- <div class="form-group mb-4">
                     <label for="id_profile_picture_url">Profile Picture URL:</label>
                     <input type="text" name="profile_picture_url" id="id_profile_picture_url"
                         value="{{ account.profile_picture_url }}" class="border border-gray-300 p-2 w-full rounded-md">
+                </div> -->
+                <div class="form-group mb-4">
+                    <label for="id_profile_picture_url">Profile Picture:</label>
+                    <input type="file" name="id_profile_picture_url" id="id_profile_picture_url" accept="image/*"
+                        class="border border-gray-300 p-2 w-full rounded-md">
                 </div>
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md">Save Changes</button>
             </form>
@@ -70,32 +67,107 @@
     </div>
 </div>
 <script>
+    // {
+    //     const form = document.getElementById('change-profile');
+    //     form.addEventListener('submit', async (e) => {
+    //         e.preventDefault();
+    //         const username = document.getElementById('id_username').value;
+    //         const first_name = document.getElementById('id_first_name').value;
+    //         const last_name = document.getElementById('id_last_name').value;
+    //         const email = document.getElementById('id_email').value;
+    //         const bio = document.getElementById('id_bio').value;
+    //         const profile_picture_url = document.getElementById('id_profile_picture_url').value;
+    //         const response = await fetchAPI('/api/v1/profile/edit/', {
+    //             method: 'POST',
+    //             body: JSON.stringify({
+    //                 username,
+    //                 first_name,
+    //                 last_name,
+    //                 email,
+    //                 bio,
+    //                 profile_picture_url
+    //             })
+    //         });
+    //         if (response.ok) {
+    //             setCurrentPath('/profile');
+    //         }
+    //     });    
+    // }
     {
         const form = document.getElementById('change-profile');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('id_username').value;
-            const first_name = document.getElementById('id_first_name').value;
-            const last_name = document.getElementById('id_last_name').value;
-            const email = document.getElementById('id_email').value;
-            const bio = document.getElementById('id_bio').value;
-            const profile_picture_url = document.getElementById('id_profile_picture_url').value;
-            const response = await fetchAPI('/api/v1/profile/edit/', {
-                method: 'POST',
-                body: JSON.stringify({
-                    username,
-                    first_name,
-                    last_name,
-                    email,
-                    bio,
-                    profile_picture_url
-                })
+
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Prevent the default form submission
+
+                // Debugging: Check if the form is being submitted
+                console.log('Form submitted!');
+
+                // Get the file input field
+                const profilePictureInput = document.getElementById('id_profile_picture_url');
+
+                // Debugging: Check if the file input field is found
+                console.log(profilePictureInput);
+
+                if (!profilePictureInput) {
+                    console.error('File input element not found!');
+                    return;
+                }
+
+                // Debugging: Check if files are selected
+                console.log(profilePictureInput.files);
+
+                const username = document.getElementById('id_username').value;
+                const first_name = document.getElementById('id_first_name').value;
+                const last_name = document.getElementById('id_last_name').value;
+                const email = document.getElementById('id_email').value;
+                const bio = document.getElementById('id_bio').value;
+                const profile_picture = profilePictureInput.files[0]; // Get the image file
+
+                const formData = new FormData();
+
+                // Append text fields
+                formData.append('username', username);
+                formData.append('first_name', first_name);
+                formData.append('last_name', last_name);
+                formData.append('email', email);
+                formData.append('bio', bio);
+
+                // Append the image file if selected
+                if (profile_picture) {
+                    formData.append('profile_picture_url', profile_picture);
+                } else {
+                    console.log('No file selected');
+                }
+                const cookies = parseCookie(document.cookie)
+                try {
+                    const response = await fetch('/api/v1/profile/edit/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            "Authorization": "Bearer " + cookies['access_token']
+                        }
+                    });
+
+                    if (response.ok) {
+                        console.log('Profile updated successfully!');
+                        window.location.href = '/profile'; // Redirect to profile page
+                    } else {
+                        const errorData = await response.json();
+                        console.error('Error:', errorData);
+                    }
+                } catch (error) {
+                    console.error('An error occurred:', error);
+                }
             });
-            if (response.ok) {
-                setCurrentPath('/profile');
-            }
-        });
+        } else {
+            console.error('Form not found!');
+        }
+
     }
+
+
+
 </script>
 {% endblock %}
 

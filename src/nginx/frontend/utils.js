@@ -198,3 +198,13 @@ function popupModel(title, content, buttons) {
     modal.remove();
   };
 }
+
+function generate404() {
+  return `
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+      <h1>404</h1>
+      <p>Page not found</p>
+      <a style="padding: 0.5rem 1rem; background-color: #333; color: white; text-decoration: none; border-radius" href="/">Go back to home</a>
+    </div>
+  `;
+}

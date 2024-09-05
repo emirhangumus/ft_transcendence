@@ -57,7 +57,6 @@ class NotificationManager:
                 'type': type,
                 'add_to_db': add_to_db
             }]
-        print("After adding, ", self.queue)
     
     def start(self):
         if self.started:
@@ -235,7 +234,6 @@ class Tournament:
                 'winner': winner
             }
             fixture['winner'] = winner
-            print(fixture)
             await self.update_game_room(fixture['game_id'], player1_score, player2_score, winner, total_match_time)
             await self.update_game_stats(fixture['game_id'], {
                 'heatmap': result['heat_map_of_ball'],
@@ -243,7 +241,6 @@ class Tournament:
         if all([i['winner'] is not None for i in self.fixtures[self.current_round]]):
             self.current_available_players = {i['winner'].id: i['winner'] for i in self.fixtures[self.current_round]}
             self.current_round += 1
-            print(self.current_round, self.section_number, self.current_available_players)
             if self.current_round == self.section_number:
                 self.end()
                 return
@@ -321,6 +318,7 @@ class Tournament:
             for player_id in self.players:
                 await self.players[player_id]['channel'].send(text_data=json.dumps({
                     'type': 'player_addition',
+                    'owner': self.tournament_owner.username,
                     'players': [{
                         'id': i,
                         'name': self.players[i]['player'].username,

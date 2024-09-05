@@ -15,8 +15,6 @@ import os
 import math
 import random
 
-random_secret = pyotp.random_base32()
-
 def genResponse(status: bool, message: str, data: dict | None) -> dict:
     if status:
         return {
@@ -100,7 +98,7 @@ def isValidUsername(username: str) -> bool:
     return username.isalnum() and len(username) >= 4 and len(username) <= 30
 
 def generate2FAQRCode(email: str) -> str:
-    totp = pyotp.TOTP(random_secret)
+    totp = pyotp.TOTP(os.environ.get('2FA_SECRET_KEY'))
     data = totp.provisioning_uri(email)
     # Create a QRCode object
     qr = qrcode.QRCode(
@@ -126,7 +124,7 @@ def generate2FAQRCode(email: str) -> str:
     return svg_content
 
 def validate2FA(code: str) -> bool:
-    totp = pyotp.TOTP(random_secret)
+    totp = pyotp.TOTP(os.environ.get('2FA_SECRET_KEY'))
     return totp.verify(code)
 
 def generate_svg_pie_chart(wins, losses, ties):

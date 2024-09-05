@@ -7,15 +7,19 @@ def getFriendState(user):
     friends = [friend['sender'] if friend['receiver'] == user.id else friend['receiver'] for friend in friends]
     friendRequests = Friendships.objects.filter(receiver=user, status='pending').values('sender')
     sentFriendRequests = Friendships.objects.filter(sender=user, status='pending').values('receiver')
+    allBlockedFriends = Friendships.objects.filter(Q(sender=user) | Q(receiver=user), status='blocked').values('sender', 'receiver')
+    blockedFriends = [friend['sender'] if friend['receiver'] == user.id else friend['receiver'] for friend in allBlockedFriends]
 
     friends = User.objects.filter(id__in=friends)
     friendRequests = User.objects.filter(id__in=friendRequests)
     sentFriendRequests = User.objects.filter(id__in=sentFriendRequests)
+    blockedFriends = User.objects.filter(id__in=blockedFriends)
     
     return {
         'friends': friends,
         'friendRequests': friendRequests,
-        'sentFriendRequests': sentFriendRequests
+        'sentFriendRequests': sentFriendRequests,
+        'blockedFriends': blockedFriends
     }
     
 def getFriends(user):

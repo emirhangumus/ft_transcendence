@@ -3,33 +3,71 @@
 {% if user.is_authenticated %}
 
 {% block content %}
-<div>
+<div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg mt-16 border">
     <input type="hidden" id="room-type" value="{{ type }}">
-    <select id="ball-color" class="block w-full mt-4 p-2 border border-gray-300 rounded">
-        <option value="blue">Blue Ball</option>
-        <option value="red">Red Ball</option>
-        <option value="green">Green Ball</option>
-    </select>
 
-    <input type="number" id="map-width" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Map Width" value="800">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Create Game Room</h2>
+    
+    <div class="mb-4">
+        <label for="ball-color" class="block text-sm font-medium text-gray-700">Select Ball Color</label>
+        <select id="ball-color" class="block w-full mt-2 p-2 border border-gray-300 rounded-lg">
+            <option value="blue">Blue Ball</option>
+            <option value="red">Red Ball</option>
+            <option value="green">Green Ball</option>
+        </select>
+    </div>
 
-    <input type="number" id="map-height" class="block w-full mt-4 p-2 border border-gray-300 rounded" placeholder="Map Height" value="600">
+    <div class="flex space-x-4 mb-4">
+        <div class="w-1/2">
+            <label for="map-width" class="block text-sm font-medium text-gray-700">Map Width</label>
+            <input type="number" id="map-width" class="block w-full mt-2 p-2 border border-gray-300 rounded-lg" placeholder="800" value="800">
+        </div>
+        <div class="w-1/2">
+            <label for="map-height" class="block text-sm font-medium text-gray-700">Map Height</label>
+            <input type="number" id="map-height" class="block w-full mt-2 p-2 border border-gray-300 rounded-lg" placeholder="600" value="600">
+        </div>
+    </div>
 
-    <input type="color" id="background-color" class="block w-full mt-4 p-2 border border-gray-300 rounded h-8" placeholder="Background Color">
+    <div class="mb-4">
+        <label for="background-color" class="block text-sm font-medium text-gray-700">Background Color</label>
+        <input type="color" id="background-color" class="block w-full mt-2 h-10 border border-gray-300 rounded-lg bg-transparent border-0" value="#ffffff">
+    </div>
 
-    <label for="skill-ball-freeze">Ball Freeze</label>
-    <input type="checkbox" id="skill-ball-freeze" class="block mt-4" value="skill-ball-freeze">
-    <label for="skill-ball-speed">Ball Speed</label>
-    <input type="checkbox" id="skill-ball-speed" class="block mt-4" value="skill-ball-speed">
+    <div class="mb-4">
+        <span class="block text-sm font-medium text-gray-700">Skills</span>
+        <div class="mt-2 space-y-2">
+            <div class="flex items-center">
+                <input type="checkbox" id="skill-ball-freeze" class="mr-2">
+                <label for="skill-ball-freeze" class="text-sm text-gray-600">Ball Freeze</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="skill-ball-speed" class="mr-2">
+                <label for="skill-ball-speed" class="text-sm text-gray-600">Ball Speed</label>
+            </div>
+        </div>
+    </div>
 
-    <label for="powerup-slow-down-opponent">Slow Down Opponent</label>
-    <input type="checkbox" id="powerup-slow-down-opponent" class="block mt-4" value="powerup-slow-down-opponent">
-    <label for="powerup-speed-up-yourself">Speed Up Yourself</label>
-    <input type="checkbox" id="powerup-speed-up-yourself" class="block mt-4" value="powerup-speed-up-yourself">
-    <label for="powerup-revert-opponent-controls">Revert Opponent's Controls</label>
-    <input type="checkbox" id="powerup-revert-opponent-controls" class="block mt-4" value="powerup-revert-opponent-controls">
+    <div class="mb-4">
+        <span class="block text-sm font-medium text-gray-700">Power-Ups</span>
+        <div class="mt-2 space-y-2">
+            <div class="flex items-center">
+                <input type="checkbox" id="powerup-slow-down-opponent" class="mr-2">
+                <label for="powerup-slow-down-opponent" class="text-sm text-gray-600">Slow Down Opponent</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="powerup-speed-up-yourself" class="mr-2">
+                <label for="powerup-speed-up-yourself" class="text-sm text-gray-600">Speed Up Yourself</label>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="powerup-revert-opponent-controls" class="mr-2">
+                <label for="powerup-revert-opponent-controls" class="text-sm text-gray-600">Revert Opponent's Controls</label>
+            </div>
+        </div>
+    </div>
 
-    <button id="start-game" class="block w-full mt-4 p-2 bg-blue-500 text-white rounded">Create Game Room</button>
+    <button id="start-game" class="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+        Create Game Room
+    </button>
 </div>
 
 <script>

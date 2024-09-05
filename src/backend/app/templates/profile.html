@@ -7,43 +7,47 @@
     .min-h-\[900px\] {
         min-height: 900px;
     }
-
-    .bg-\[#f5f5f5\] {
-        background-color: #f5f5f5;
-    }
-
-    .border-\[#e0e0e0\] {
-        border-color: #e0e0e0;
-    }
 </style>
-<div class="grid grid-cols-12 mt-12 h-full min-h-[900px]">
+<div class="grid grid-cols-12 mt-12 min-h-[900px]">
     <!-- Sidebar Section -->
-    <div class="col-span-3 bg-[#f5f5f5] border-r border-[#e0e0e0] flex flex-col justify-between items-center p-4">
-        <div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4 flex-1">
-            <h2 class="text-center font-bold">Profile Navigation</h2>
-            <ul class="mt-4">
-                <li class="mb-2"><a href="/profile/" class="text-blue-500 hover:underline">View Profile</a></li>
-                <li class="mb-2"><a href="/profile/edit" class="text-blue-500 hover:underline">Edit Profile</a></li>
+    <aside class="col-span-3 flex flex-col">
+        <div class="bg-white rounded-md flex-1">
+            <h2 class="text-lg font-bold text-center mb-4">Profile Navigation</h2>
+            <ul class="space-y-2">
+                <li><a href="/profile/" class="text-blue-500 hover:underline">View Profile</a></li>
+                <li><a href="/profile/edit" class="text-blue-500 hover:underline">Edit Profile</a></li>
             </ul>
         </div>
-    </div>
+    </aside>
 
     <!-- Profile Content Section -->
-    <div class="col-span-9 bg-[#f5f5f5] border-l border-[#e0e0e0] p-4">
-        <div class="bg-white border border-[#e0e0e0] rounded-md p-6 w-full">
-            <h1 class="text-2xl font-bold mb-4">{{ user.first_name }} {{ user.last_name }}'s Profile</h1>
-            <img src="{{ account.profile_picture_url|default:'/api/v1/static/register_cat.jpg' }}" alt="Profile Picture" class="rounded-full w-32 h-32 mb-4">
-            <p><strong>Bio:</strong> {{ account.bio }}</p>
-            <p><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
-            <p><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
-            <p><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
-            <p><strong>User Page:</strong> <a href="/profile/{{ user.username }}" style="text-decoration: underline;">{{ user.username }}</a></p>
-            <div class="mt-4">
-                <button
-                    data-state="{{ account.two_factor_auth }}"
-                    id="enable-disable-2fa"
-                    class="bg-blue-600 text-white py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition-all ease-in-out duration-300 px-4"
-                >
+    <main class="col-span-9 border-l border-[#e0e0e0] px-4">
+        <div class="bg-white rounded-md px-4">
+            <!-- Profile Header -->
+            <div class="flex items-center mb-6">
+                <img src="/api/v1{{ account.profile_picture_url|default:'/api/v1/static/register_cat.jpg' }}"
+                    alt="Profile Picture" class="rounded-full w-32 h-32 mr-4">
+                <div>
+                    <h1 class="text-2xl font-bold mb-2">{{ user.first_name }} {{ user.last_name }}'s Profile</h1>
+                    <p class="text-gray-600"><strong>Username:</strong> {{ user.username }}</p>
+                    <p class="text-gray-600"><strong>Email:</strong> {{ user.email }}</p>
+                </div>
+            </div>
+
+            <!-- Additional Profile Information -->
+            <div class="mb-6">
+                <p class="mb-2"><strong>Bio:</strong> {{ account.bio }}</p>
+                <p class="mb-2"><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
+                <p class="mb-2"><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
+                <p class="mb-2"><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
+                <p class="mb-4"><strong>User Page:</strong> <a href="/profile/{{ user.username }}"
+                        class="text-blue-500 hover:underline">{{ user.username }}</a></p>
+            </div>
+
+            <!-- 2FA Button -->
+            <div>
+                <button data-state="{{ account.two_factor_auth }}" id="enable-disable-2fa"
+                    class="bg-blue-600 text-white py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-600 hover:bg-blue-700 transition ease-in-out duration-300">
                     Enable/Disable 2FA
                 </button>
                 <script>
@@ -78,7 +82,7 @@
                 </script>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 {% endblock %}
 

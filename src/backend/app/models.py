@@ -6,7 +6,8 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator
 class Accounts(models.Model):
     id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, unique=True)
     bio = models.TextField(default='')
-    profile_picture_url = models.TextField(default='/api/v1/static/register_cat.jpg')
+    profile_picture_url = models.ImageField(upload_to='profile_pictures/', default='/api/v1/static/register_cat.jpg')
+    # profile_picture_url = models.TextField(default='/api/v1/static/register_cat.jpg')
     status = models.BooleanField(default=True)
     two_factor_auth = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -14,16 +15,6 @@ class Accounts(models.Model):
 
     class Meta:
         db_table = 'accounts'
-
-class BlockedUsers(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    blocker = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='blocked_blocker_set')
-    blocked = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='blocked_blocked_set')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'blocked_users'
 
 class ChatRooms(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -78,12 +69,14 @@ class Friendships(models.Model):
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected'),
+        ('blocked', 'Blocked'),
     ]
     
     id = models.BigAutoField(primary_key=True)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='friendships_sender_set')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, related_name='friendships_receiver_set')
     status = models.CharField(max_length=20, choices=STATUS_TYPES)
+    blocked_by = models.ForeignKey(settings.AUTH_USER_MODEL, models.DO_NOTHING, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

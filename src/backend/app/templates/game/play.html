@@ -11,6 +11,39 @@
 <div class="grid place-items-center mt-16">
     <canvas id="gameCanvas" width="0" height="0"></canvas>
 </div>
+{% if render_friends.render %}
+<div class="grid place-items-center mt-4" id="inviteFriendsContainer">
+    <h2 class="text-2xl">Arkadaşlarını davet et</h2>
+    <div class="grid grid-cols-2 gap-4 mt-4">
+        {% for friend in render_friends.friends %}
+        <button class="inviteFriendsToMatchBtn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center gap-4"
+            data-username="{{ friend.username }}" onclick="inviteFriend('{{ friend.username }}')">
+            <p>{{ friend.username }}</p>
+            <div class="friendStatusCircle animate-pulse w-4 h-4 rounded-full bg-yellow-500 border border-white"
+                data-username="{{ friend.username }}"></div>
+        </button>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+<script>
+    {
+        function inviteFriend(username) {
+            const element = document.querySelector(`.friendStatusCircle[data-username="${username}"]`);
+            // element.disabled = true;
+            fetchAPI(`/api/v1/game/{{ game.id }}/invite/${username}/`, {
+                method: 'POST',
+            }).then((response) => {
+                if (response.status === 200) {
+                    alert('Davet gönderildi');
+                } else {
+                    // element.disabled = false;
+                    alert('Davet gönderilemedi');
+                }
+            });
+        }
+    }
+</script>
 <script>
     {
         let gameState = 'waiting_for_players';
@@ -39,8 +72,7 @@
             ctx.fillText(text, canvas.width / 2 - textWidth / 2, canvas.height / 2);
         }
 
-        function renderGameDecorativeLines()
-        {
+        function renderGameDecorativeLines() {
             if (canvasWidth === -1 || canvasHeight === -1) {
                 return;
             }
@@ -93,7 +125,7 @@
             ctx.beginPath();
             ctx.arc(canvasWidth / 2, canvasHeight / 2, 100, 0, 2 * Math.PI);
             ctx.stroke();
-        } 
+        }
 
         function gameRenderScreen(data) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -166,7 +198,10 @@
             if (data.state === 'game_over') {
                 chatSocket.close();
                 alert('Oyun bitti!');
-                setCurrentPath('/');
+                setTimeout(() => {
+                    console.log("Redirecting to /");
+                    setCurrentPath('/');
+                }, 20);
                 return;
             }
             if (canvasWidth !== data.customizations.map_width || canvasHeight !== data.customizations.map_height) {
@@ -199,8 +234,19 @@
                     "powerup_slow_down_opponent": self.powerup_slow_down_opponent,
                     "powerup_speed_up_yourself": self.powerup_speed_up_yourself,
                     "powerup_revert_opponent_controls": self.powerup_revert_opponent_controls
+                },
+                "meta": {
+                    "how_many_players": self.how_many_players,
+                    "is_tournament": self.is_tournament,
+                    'is_multiplayer': self.is_multiplayer
                 }
             */
+            if (data.state != 'waiting_for_players') {
+                const inviteButtons = document.getElementById("inviteFriendsContainer")
+                if (inviteButtons) {
+                    inviteButtons.style.display = 'none';
+                }
+            }
 
             if (data.state == 'waiting_for_players') {
                 gameWaitScreen();

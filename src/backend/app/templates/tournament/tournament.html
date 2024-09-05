@@ -3,39 +3,33 @@
 {% if user.is_authenticated %}
 
 {% block content %}
-<style>
-    .min-h-\[900px\] {
-        min-height: 900px;
-    }
-
-    .bg-\[#f5f5f5\] {
-        background-color: #f5f5f5;
-    }
-
-    .border-\[#e0e0e0\] {
-        border-color: #e0e0e0;
-    }
-    
-</style>
-<div class="grid grid-cols-12 mt-12 h-full min-h-[900px]">
-    <div class="col-span-3 bg-[#f5f5f5] border-r border-[#e0e0e0] flex flex-col justify-between items-center p-4">
-        <div class="w-full bg-white border border-[#e0e0e0] rounded-md p-4 flex-1">
+<div class="grid grid-cols-12 gap-6 mt-12 h-full min-h-[75vh]">
+    <!-- Sidebar -->
+    <div class="col-span-3 bg-gray-100 border-r border-gray-300 flex flex-col p-4 rounded-lg shadow-lg">
+        <!-- Tournaments List -->
+        <div class="w-full bg-white border border-gray-300 rounded-lg p-4 flex-1 space-y-4">
             {% for tournament in tournaments %}
             <a href="/tournament/{{ tournament.tournament_id }}"
-                class="w-full bg-[#f5f5f5] hover:bg-[#e0e0e0] border-b border-[#e0e0e0] p-2 text-center flex">
-                <p>{{ tournament.name }}</p>
-                <button class="bg-[#f5f5f5] hover:bg-[#e0e0e0] border border-[#e0e0e0] p-1 rounded-md">Join</button>
+               class="flex justify-between items-center bg-gray-100 hover:bg-gray-200 border-b border-gray-300 p-3 rounded-md transition duration-200 ease-in-out">
+                <span class="font-medium text-gray-700">{{ tournament.name }}</span>
+                <button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md transition duration-200 ease-in-out">Join</button>
             </a>
             {% endfor %}
         </div>
-        <a href="/tournament/new" class="w-full bg-[#f5f5f5] hover:bg-[#e0e0e0] border-b border-[#e0e0e0] p-2 text-center">Create Tournament</a>
+        <!-- Create Tournament Button -->
+        <a href="/tournament/new"
+           class="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white text-center p-3 rounded-lg transition duration-200 ease-in-out">
+            Create Tournament
+        </a>
     </div>
-    <div class="col-span-9 bg-[#f5f5f5] border-l border-[#e0e0e0] flex flex-col justify-between items-center p-4">
+
+    <!-- Main Content Area -->
+    <div class="col-span-9 bg-gray-100 border-l border-gray-300 flex flex-col p-6 rounded-lg shadow-lg">
         {% if tournament %}
             {% include 'tournament/tournament_info.html' %}
         {% else %}
-        <div class="col-span-9 bg-[#f5f5f5] flex flex-col justify-between items-center p-4">
-            <p>No tournament joined</p>
+        <div class="flex flex-col justify-center items-center flex-1 text-center text-gray-700">
+            <p class="text-lg font-medium">No tournament joined</p>
         </div>
         {% endif %}
     </div>
