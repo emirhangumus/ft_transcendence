@@ -33,7 +33,7 @@ services:
     container_name: backend
     build: ./src/backend
     volumes:
-      - ./data/backend:/app
+      - backend_data:/var/www/html
     ports:
       - "8000:8000"
     env_file:
@@ -70,3 +70,9 @@ volumes:
   pgadmin:
 #   static_volume:
 #   media_volume:
+  backend_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/www/42ecole/data/backend

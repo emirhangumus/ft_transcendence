@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Accounts, ChatMessages, ChatRooms, ChatUsers, GameRecords, GameStats
-from .queries.chat import assignChatbotRoom, createChatRoom, leaveChatRoom, deleteChatRoom
+from .queries.chat import assignChatbotRoom, createChatRoom, leaveChatRoom, deleteChatRoom, getFriendChatRooms
 
 class GameStatsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -157,7 +157,7 @@ class FriendRequestActionsSerializer(serializers.Serializer):
             if friendship:
                 friendship.delete()
                 # find the chat room and delete it
-                chatroom = ChatRooms.objects.filter(name=f"{user.username}-{target.username}", can_leave=False).first()
+                chatroom = getFriendChatRooms(user.username, target.username)
                 if chatroom:
                     deleteChatRoom(chatroom.id)
         elif action == 'block':
@@ -172,7 +172,7 @@ class FriendRequestActionsSerializer(serializers.Serializer):
                 friendship.blocked_by = user
                 friendship.save()
                 # find the chat room and delete it
-                chatroom = ChatRooms.objects.filter(name=f"{user.username}-{target.username}", can_leave=False).first()
+                chatroom = getFriendChatRooms(user.username, target.username)
                 if chatroom:
                     deleteChatRoom(chatroom.id)
         elif action == 'unblock':
@@ -184,6 +184,7 @@ class FriendRequestActionsSerializer(serializers.Serializer):
             if friendship and friendship.blocked_by == user:
                 friendship.status = 'accepted'
                 friendship.save()
+                createChatRoom(f"{user.username}-{target.username}", user, [target.username], can_leave=False)
         return friendship
     
 

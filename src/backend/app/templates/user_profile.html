@@ -19,8 +19,8 @@
         <div class="mb-6">
             <p class="text-gray-600"><strong>Bio:</strong> {{ account.bio }}</p>
             <p class="text-gray-600"><strong>Status:</strong> {{ account.status|yesno:"Active,Inactive" }}</p>
-            <p class="text-gray-600"><strong>Joined:</strong> {{ account.created_at|date:"Y-m-d" }}</p>
-            <p class="text-gray-600"><strong>Last Updated:</strong> {{ account.updated_at|date:"Y-m-d" }}</p>
+            <p class="text-gray-600"><strong>Joined:</strong> {{ account.created_at }}</p>
+            <p class="text-gray-600"><strong>Last Updated:</strong> {{ account.updated_at }}</p>
         </div>
 
         <!-- Game Statistics -->

@@ -172,26 +172,35 @@ class EditProfileView(APIView):
     def post(self, request):
         try:
             user = request.user
-            print(user)
             account = get_object_or_404(Accounts, id=user)
-
-            # Handle form fields
-            user.username = request.data.get('username', user.username)
-            user.first_name = request.data.get('first_name', user.first_name)
-            user.last_name = request.data.get('last_name', user.last_name)
-            user.email = request.data.get('email', user.email)
-            user.save()
-
-            # Handle bio
-            account.bio = request.data.get('bio', account.bio)
-
+            username = request.data.get('username', user.username)
+            first_name = request.data.get('first_name', user.first_name)
+            last_name = request.data.get('last_name', user.last_name)
+            email = request.data.get('email', user.email)
+            bio = request.data.get('bio', account.bio)
+            if username:
+                if User.objects.filter(username=username).exists() and username != user.username:
+                    raise Exception("Username already exists")
+                if not isValidUsername(username):
+                    raise Exception("Invalid username")
+                user.username = username
+            if email:
+                if User.objects.filter(email=email).exists() and email != user.email:
+                    raise Exception("Email already exists")
+                user.email = email
+            if first_name:
+                user.first_name = first_name
+            if last_name:
+                user.last_name = last_name
+            if bio:
+                account.bio = bio
             # Handle profile picture file if uploaded
             if 'profile_picture_url' in request.FILES:
                 profile_picture_url = request.FILES['profile_picture_url']
                 account.profile_picture_url = profile_picture_url  # Save the uploaded file to the model
-
             account.save()
-
+            user.save()
+            
             return Response({'detail': 'Profile updated successfully'}, status=status.HTTP_200_OK)
 
         except Exception as e:
