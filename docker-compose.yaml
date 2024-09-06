@@ -47,10 +47,13 @@ services:
     container_name: nginx
     build: ./src/nginx
     volumes:
-      - ./data/nginx/static_volume:/home/app/web/staticfiles
-      - ./data/nginx/media_volume:/home/app/web/mediafiles
+      - /etc/ssl/certs/nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
+      - /etc/ssl/private/nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
+      - /etc/ssl/certs/dhparam.pem:/etc/ssl/certs/dhparam.pem
+      - /var/www/42ecole/src/nginx/nginx.conf:/etc/nginx/nginx.conf
     ports:
-      - 8080:80
+      - 443:443   # For HTTP
+      - 80:80   # For HTTPS
     depends_on:
       - backend
     networks:
@@ -61,15 +64,7 @@ networks:
     driver: bridge
 
 volumes:
-#   pgbackend:
-#     - driver: local
-#     - driver_opts:
-#         type: none
-#         device: /data/postgres
-#         o: bind
   pgadmin:
-#   static_volume:
-#   media_volume:
   backend_data:
     driver: local
     driver_opts:
