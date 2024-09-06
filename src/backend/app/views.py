@@ -548,8 +548,8 @@ class TournamentView(APIView):
         if (tournament_id):
             tournament = Tournaments.objects.filter(tournament_id=tournament_id).first()
             if tournament:
-                return TemplateResponse(request, 'tournament/tournament.html', {'tournament': tournament, 'tournaments': tournaments })
-        return TemplateResponse(request, 'tournament/tournament.html', {'tournaments': tournaments})
+                return TemplateResponse(request, 'tournament/tournament.html', {'tournament': tournament, 'tournaments': tournaments, "username": request.user.username })
+        return TemplateResponse(request, 'tournament/tournament.html', {'tournaments': tournaments, "username": request.user.username })
     
 class TournamentCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -574,7 +574,7 @@ class TournamentCreateView(APIView):
             tournament_id = generateRandomID('tournaments')
             created_user = User.objects.get(id=user.id)
             tournament = Tournaments.objects.create(tournament_id=tournament_id, created_by=created_user, name=tournament_data['name'], player_amount=tournament_data['player_amount'], status='pending', game_settings=game_data)
-            tournamentManager.add_tournament(tournament_id, game_data)
+            tournamentManager.add_tournament(tournament_id, game_data, tournament_data)
             response = genResponse(True, "Tournament created successfully", { "tournament_id": tournament_id })
             return Response(response, status=status.HTTP_201_CREATED)
         except Exception as e:

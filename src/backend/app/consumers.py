@@ -287,7 +287,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             
     async def game_data(self, event):
         # Send the game data to WebSocket
-        await self.send(text_data=json.dumps(event['message']))
+        try:
+            await self.send(text_data=json.dumps(event['message']))
+        except:
+            pass
         
     @sync_to_async
     def update_game_room(self, game_id, player1_score, player2_score, winner_id, total_match_time):

@@ -137,10 +137,11 @@ class Tournament:
     fixtures = []
     is_report_taken = False
     
-    def __init__(self, players, manager, game_data):
+    def __init__(self, players, manager, game_data, tournament_data):
         self.players = players
         self.manager = manager
         self.game_data = game_data
+        self.tournament_data = tournament_data
         
     def start(self, tournament_id=None):
         if self.started:
@@ -351,6 +352,8 @@ class Tournament:
     def start_tournament(self, user):
         if user.id != self.tournament_owner.id:
             return
+        if len(self.players) != self.tournament_data['player_amount']:
+            return
         self.prepare_fixtures = True
         self.game_started = True
         self.current_available_players = self.players
@@ -421,8 +424,8 @@ class TournamentManager:
         self.tournaments = {}
         self.started_tournaments = []
 
-    def add_tournament(self, tournament_id, game_data):
-        self.tournaments[tournament_id] = Tournament({}, self, game_data)
+    def add_tournament(self, tournament_id, game_data, tournament_data):
+        self.tournaments[tournament_id] = Tournament({}, self, game_data, tournament_data)
         
     def add_player(self, tournament_id, player, channel):
         if tournament_id not in self.tournaments:
@@ -463,7 +466,6 @@ class TournamentManager:
             final_report = self.tournaments[tournament_id].get_final_report()
             if final_report != 'tournament_is_not_over':
                 players = final_report['players']
-                stats = final_report['stats']
                 for player in players:
                     notificationManager.add_notification(player.id, 'Tournament has ended, the winner is ' + final_report['winner'].username, {
                         'tournament_id': final_report['tournament_id'],
@@ -481,7 +483,7 @@ class TournamentManager:
     async def initial_up(self):
         tournaments = list(await self.get_pending_tournaments())
         for tournament in tournaments:
-            self.tournaments[tournament.tournament_id] = Tournament({}, self, tournament.game_settings)
+            self.tournaments[tournament.tournament_id] = Tournament({}, self, tournament.game_settings, {"player_amount": tournament.player_amount})
             self.tournaments[tournament.tournament_id].start(tournament.tournament_id)
             
     def start_tournament(self, tournament_id, user):
