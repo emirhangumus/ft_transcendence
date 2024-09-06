@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import HomeView, RegisterView, LoginView, TwoFactorAuthView, FriendsView, ChatView, ChatCreateView, serve_dynamic_image, serve_dynamic_media, GameView, GameCreateView, GamePlayView, GameInviteView, TournamentView, TournamentCreateView, ProfileView, EditProfileView, UserProfileView, TournamentView, GameHeatMapView, LeaderboardView
+from .views import HomeView, RegisterView, LoginView, TwoFactorAuthView, FriendsView, ChatView, ChatCreateView, ChatLeave, serve_dynamic_image, serve_dynamic_media, GameView, GameCreateView, GamePlayView, GameInviteView, TournamentView, TournamentCreateView, ProfileView, EditProfileView, UserProfileView, TournamentView, GameHeatMapView, LeaderboardView
 
 urlpatterns = [
     path('static/<str:filename>/', serve_dynamic_image, name='serve_dynamic_image'),
@@ -19,6 +19,7 @@ urlpatterns = [
     path('friend/', FriendsView.as_view(), name='friends'),
     
     path('chat/', ChatView.as_view(), name='chat'),
+    path('chat/<str:chat_id>/leave/', ChatLeave.as_view(), name='leave_chat'),
     path('chat/new/', ChatCreateView.as_view(), name='new_chat'),
     path('chat/<str:chat_id>/', ChatView.as_view(), name='chat_room'),
     

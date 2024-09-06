@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 import json
-from .models import ChatRooms, ChatMessages, ChatUsers, Notifications, GameRecords, GameStats, Friendships, Accounts
+from .models import ChatRooms, ChatMessages, ChatUsers, Notifications, GameRecords, GameStats, GamePlayers, Friendships, Accounts
 from django.contrib.auth.models import User
 import time
 import asyncio
@@ -265,6 +265,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             winner = await self.get_user(winner['user_id'] if winner else 1)
             loser = await self.get_user(loser['user_id'] if loser else 1)
 
+            await self.update_game_player(self.game_id, winner.id)
+            await self.update_game_player(self.game_id, loser.id)
             notificationManager.add_notification(loser.id, 'You have lost the game, better luck next time', {"path": "/"}, 'redirection', False)
             notificationManager.add_notification(winner.id, 'You have won the game, congratulations', {"path": "/"}, 'redirection', False)
             await self.update_game_room(self.game_id, player1_score, player2_score, winner, total_match_time)
@@ -306,6 +308,13 @@ class GameConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def get_user(self, user_id):
         return User.objects.get(id=user_id)
+    
+    @sync_to_async
+    def update_game_player(self, game_id, player_id):
+        game = GameRecords.objects.get(game_id=game_id)
+        player = User.objects.get(id=player_id)
+        p = GamePlayers.objects.create(game_record=game, player_id=player)
+        return p
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):

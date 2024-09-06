@@ -10,7 +10,7 @@ from .utils import genResponse, generateRandomID, isValidUsername, generate2FAQR
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .models import Friendships, GameRecords, GameStats, GameTypes, GamePlayers, Tournaments, Accounts, ChatMessages
 from .queries.friend import getFriendState, getFriends
-from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom, getFriendChatRooms
+from .queries.chat import getChatRooms, getChatRoom, getChatMessages, createChatRoom, getFriendChatRooms, leaveChatRoom
 import os
 from .jwt import PingPongObtainPairSerializer
 from django.conf import settings
@@ -123,7 +123,6 @@ class UserProfileView(APIView):
         # Fetch the user and account based on the username
         user = get_object_or_404(User, username=username)
         account = get_object_or_404(Accounts, id=user)
-        
         # Serialize the account information
         account_serializer = AccountSerializer(account)
         
@@ -411,6 +410,31 @@ class ChatView(APIView):
                 }})
         return TemplateResponse(request, 'chat.html', {'user': user, 'chatRooms': chatRooms})
     
+class ChatLeave(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, chat_id):
+        user = request.user
+        chatRoom = getChatRoom(user.id, chat_id)
+        if chatRoom:
+            leaveChatRoom(chatRoom.room.id, user.id)
+            chatRooms = getChatRooms(user.id)
+            response = genResponse(True, "Chat room left successfully", { 'chatRooms': [{
+                'chat_id': chatRoom.room.chat_id,
+                'name': chatRoom.room.name,
+                'can_leave': chatRoom.room.can_leave,
+                } for chatRoom in chatRooms]
+            })
+            return Response(response, status=status.HTTP_200_OK)
+        chatRooms = getChatRooms(user.id)
+        response = genResponse(False, "Chat room not found", { 'chatRooms': [{
+            'chat_id': chatRoom.room.chat_id,
+            'name': chatRoom.room.name,
+            'can_leave': chatRoom.room.can_leave,
+            } for chatRoom in chatRooms]
+        })
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
 class ChatCreateView(APIView):
     parser_classes = [JSONParser]
     permission_classes = [IsAuthenticated]
@@ -496,7 +520,6 @@ class GameCreateView(APIView):
                 data = serilizer.validated_data
                 game_id = generateRandomID('gamerecords')
                 game_record = GameRecords.objects.create(game_id=game_id, player1_score=0, player2_score=0, winner_id=None, total_match_time=0)
-                game_player = GamePlayers.objects.create(game_record=game_record, player_id=user)
                 game_type = GameTypes.objects.create(game_record=game_record, payload=data)
                 game_stat = GameStats.objects.create(game_record=game_record, stats={
                     "heatmap": []

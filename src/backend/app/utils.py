@@ -155,31 +155,41 @@ def generate_svg_pie_chart(wins, losses, ties):
     svg_parts = [f'<svg width="500" height="300" viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg">']
 
     # Full circle background for reference
-    svg_parts.append(f'<circle cx="{centerX}" cy="{centerY}" r="{radius}" fill="#d3d3d3"/>')
+    if wins == 0 and losses == 0 or wins == 0 and ties == 0 or losses == 0 and ties == 0:
+        if wins == 0 and losses == 0 and ties == 0:
+            svg_parts.append(f'<circle cx="{centerX}" cy="{centerY}" r="{radius}" fill="#d3d3d3"/>')
+        elif wins == 0 and losses == 0:
+            svg_parts.append(f'<circle cx="{centerX}" cy="{centerY}" r="{radius}" fill="#ffff00"/>')
+        elif wins == 0 and ties == 0:
+            svg_parts.append(f'<circle cx="{centerX}" cy="{centerY}" r="{radius}" fill="#ff0000"/>')
+        elif losses == 0 and ties == 0:
+            svg_parts.append(f'<circle cx="{centerX}" cy="{centerY}" r="{radius}" fill="#00ff00"/>')
+    else:
+        svg_parts.append(f'<circle cx="{centerX}" cy="{centerY}" r="{radius}" fill="#d3d3d3"/>')
 
-    current_angle = 0
+        current_angle = 0
 
-    # Add Wins slice (Green)
-    if wins > 0:
-        end_coords = polar_to_cartesian(centerX, centerY, radius, current_angle + win_angle)
-        large_arc_flag = 1 if win_angle > 180 else 0
-        svg_parts.append(f'<path d="M {centerX},{centerY} L {start_coords["x"]},{start_coords["y"]} A {radius},{radius} 0 {large_arc_flag},1 {end_coords["x"]},{end_coords["y"]} Z" fill="#00ff00" />')
-        start_coords = end_coords  # Update the starting point for the next slice
-        current_angle += win_angle
+        # Add Wins slice (Green)
+        if wins > 0:
+            end_coords = polar_to_cartesian(centerX, centerY, radius, current_angle + win_angle)
+            large_arc_flag = 1 if win_angle > 180 else 0
+            svg_parts.append(f'<path d="M {centerX},{centerY} L {start_coords["x"]},{start_coords["y"]} A {radius},{radius} 0 {large_arc_flag},1 {end_coords["x"]},{end_coords["y"]} Z" fill="#00ff00" />')
+            start_coords = end_coords  # Update the starting point for the next slice
+            current_angle += win_angle
 
-    # Add Losses slice (Red)
-    if losses > 0:
-        end_coords = polar_to_cartesian(centerX, centerY, radius, current_angle + loss_angle)
-        large_arc_flag = 1 if loss_angle > 180 else 0
-        svg_parts.append(f'<path d="M {centerX},{centerY} L {start_coords["x"]},{start_coords["y"]} A {radius},{radius} 0 {large_arc_flag},1 {end_coords["x"]},{end_coords["y"]} Z" fill="#ff0000" />')
-        start_coords = end_coords
-        current_angle += loss_angle
+        # Add Losses slice (Red)
+        if losses > 0:
+            end_coords = polar_to_cartesian(centerX, centerY, radius, current_angle + loss_angle)
+            large_arc_flag = 1 if loss_angle > 180 else 0
+            svg_parts.append(f'<path d="M {centerX},{centerY} L {start_coords["x"]},{start_coords["y"]} A {radius},{radius} 0 {large_arc_flag},1 {end_coords["x"]},{end_coords["y"]} Z" fill="#ff0000" />')
+            start_coords = end_coords
+            current_angle += loss_angle
 
-    # Add Ties slice (Yellow)
-    if ties > 0:
-        end_coords = polar_to_cartesian(centerX, centerY, radius, current_angle + tie_angle)
-        large_arc_flag = 1 if tie_angle > 180 else 0
-        svg_parts.append(f'<path d="M {centerX},{centerY} L {start_coords["x"]},{start_coords["y"]} A {radius},{radius} 0 {large_arc_flag},1 {end_coords["x"]},{end_coords["y"]} Z" fill="#ffff00" />')
+        # Add Ties slice (Yellow)
+        if ties > 0:
+            end_coords = polar_to_cartesian(centerX, centerY, radius, current_angle + tie_angle)
+            large_arc_flag = 1 if tie_angle > 180 else 0
+            svg_parts.append(f'<path d="M {centerX},{centerY} L {start_coords["x"]},{start_coords["y"]} A {radius},{radius} 0 {large_arc_flag},1 {end_coords["x"]},{end_coords["y"]} Z" fill="#ffff00" />')
 
     # Add the legend with color boxes and percentages next to the chart
     legend_start_x = 320  # Legend x position

@@ -8,7 +8,7 @@ def assignChatbotRoom(userId):
     chatbot = User.objects.get(id=BOT_ID)
     chatroom = ChatRooms.objects.create(
         chat_id=generateRandomID('chatrooms'),
-        name='chat.botRoom',
+        name='ClapTrap Pipe',
         can_leave=False
     )
     ChatUsers.objects.create(

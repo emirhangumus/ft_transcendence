@@ -33,7 +33,7 @@ services:
     container_name: backend
     build: ./src/backend
     volumes:
-      - backend_data:/var/www/html
+      - backend_data:/var/www/html/media
     ports:
       - "8000:8000"
     env_file:

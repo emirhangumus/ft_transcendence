@@ -7,25 +7,26 @@
     <div class="col-span-3 bg-gray-100 border-r border-gray-300 flex flex-col p-4">
         <div class="w-full bg-white border border-gray-300 rounded-lg p-4 flex-1 space-y-4">
             {% for room in chatRooms %}
-            <a href="/chat/{{ room.chat_id }}"
-               class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition duration-200">
-                <span class="font-semibold text-gray-800">{{ room.name }}</span>
+            <div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition duration-200">
+                <a href="/chat/{{ room.chat_id }}"  class="font-semibold text-gray-800">
+                    {{ room.name }}
+                </a>
                 {% if room.can_leave %}
-                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">
+                <button class="leaveFromChat px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200" data-chat-id="{{ room.chat_id }}">
                     Leave
                 </button>
                 {% endif %}
-            </a>
+            </div>
             {% endfor %}
         </div>
         <a href="/chat/new"
-           class="mt-4 block text-center text-blue-600 border border-blue-600 rounded-lg py-2 hover:bg-blue-600 hover:text-white transition duration-200">
+            class="mt-4 block text-center text-blue-600 border border-blue-600 rounded-lg py-2 hover:bg-blue-600 hover:text-white transition duration-200">
             Create ChatRoom
         </a>
     </div>
     <div class="col-span-9 bg-gray-100 border-l border-gray-300 flex flex-col p-4">
         {% if chatRoom %}
-            {% include 'chat_room.html' %}
+        {% include 'chat_room.html' %}
         {% else %}
         <div class="flex flex-col justify-center items-center p-4">
             <p class="text-gray-600 text-lg">No chat room selected</p>
@@ -33,6 +34,49 @@
         {% endif %}
     </div>
 </div>
+<script>
+    {
+
+        function renderRoomBtn(roomName, roomId, canLeave)
+        {
+            return `
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition duration-200">
+                    <a href="/chat/{{ room.chat_id }}"  class="font-semibold text-gray-800">
+                        ${roomName}
+                    </a>
+                    ${canLeave ? `
+                    <button class="leaveFromChat px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200" data-chat-id="${roomId}">
+                        Leave
+                    </button>
+                    ` : ''}
+                </div>
+            `
+        }
+
+        document.querySelectorAll('.leaveFromChat').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const chatId = e.target.getAttribute('data-chat-id');
+                const response = await fetchAPI(`/api/v1/chat/${chatId}/leave/`, {
+                    method: 'POST',
+                });
+                try {
+                    data = await response.json();
+                    if (data.success) {
+                        const chatRoom = document.querySelector('.chat-room');
+                        chatRoom.innerHTML = '';
+                        const chatRooms = document.querySelector('.chat-rooms');
+                        chatRooms.innerHTML = '';
+                        data.chatRooms.forEach(room => {
+                            chatRooms.innerHTML += renderRoomBtn(room.name, room.chat_id, room.can_leave);
+                        });
+                    }
+                }  catch (error) {
+                    console.log(data);
+                }
+            });
+        });
+    }
+</script>
 {% endblock %}
 
 {% endif %}

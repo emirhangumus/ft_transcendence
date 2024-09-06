@@ -1,26 +1,43 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mx-auto mt-12">
-    <div class="bg-white border border-gray-200 rounded-md p-6">
-        <h1 class="text-2xl font-bold mb-4">Game Stats</h1>
-        
-        <!-- Game Stats -->
-        <p><strong>Game ID:</strong> {{ game_record.game_id }}</p>
-        <p><strong>Player 1 Score:</strong> {{ game_record.player1_score }}</p>
-        <p><strong>Player 2 Score:</strong> {{ game_record.player2_score }}</p>
-        <p><strong>Winner:</strong> 
-            {% if game_record.winner_id %}
-                <a href="/profile/{{ game_record.winner_id }}" style="text-decoration: underline;">{{ game_record.winner_id }}</a>
-            {% else %}
-                None
-            {% endif %}
-        </p>
-        <p><strong>Total Match Time:</strong> {{ game_record.total_match_time }} seconds</p>
+<div class="container mx-auto mt-12 p-6">
+    <div class="bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-6">Game Stats</h1>
+
+        <!-- Game Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-gray-100 p-4 rounded-md border border-gray-300">
+                <p class="text-sm font-medium text-gray-700"><strong>Game ID:</strong></p>
+                <p class="text-lg font-semibold text-gray-900">{{ game_record.game_id }}</p>
+            </div>
+            <div class="bg-gray-100 p-4 rounded-md border border-gray-300">
+                <p class="text-sm font-medium text-gray-700"><strong>Player 1 Score:</strong></p>
+                <p class="text-lg font-semibold text-gray-900">{{ game_record.player1_score }}</p>
+            </div>
+            <div class="bg-gray-100 p-4 rounded-md border border-gray-300">
+                <p class="text-sm font-medium text-gray-700"><strong>Player 2 Score:</strong></p>
+                <p class="text-lg font-semibold text-gray-900">{{ game_record.player2_score }}</p>
+            </div>
+            <div class="bg-gray-100 p-4 rounded-md border border-gray-300">
+                <p class="text-sm font-medium text-gray-700"><strong>Winner:</strong></p>
+                <p class="text-lg font-semibold text-gray-900">
+                    {% if game_record.winner_id %}
+                        <a href="/profile/{{ game_record.winner_id }}" class="text-blue-500 hover:text-blue-700 underline">{{ game_record.winner_id }}</a>
+                    {% else %}
+                        <span class="text-gray-500">None</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="bg-gray-100 p-4 rounded-md border border-gray-300 lg:col-span-2">
+                <p class="text-sm font-medium text-gray-700"><strong>Total Match Time:</strong></p>
+                <p class="text-lg font-semibold text-gray-900">{{ game_record.total_match_time }} seconds</p>
+            </div>
+        </div>
 
         <!-- Heat Map Section -->
-        <h2 class="text-xl font-bold mt-6">Ball Location Heatmap</h2>
-        <div class="heatmap-container">
+        <h2 class="text-2xl font-bold text-gray-900 mt-8 mb-4">Ball Location Heatmap</h2>
+        <div class="heatmap-container bg-gray-50 p-4 rounded-md border border-gray-200">
             <!-- Embed the generated SVG heatmap -->
             {{ heatmap_svg|safe }}
         </div>
