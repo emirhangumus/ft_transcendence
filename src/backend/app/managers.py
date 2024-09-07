@@ -1,5 +1,5 @@
 import json
-from .models import Notifications, Tournaments
+from .models import Notifications, Tournaments, ChatUsers, ChatRooms, ChatMessages
 import asyncio
 from .utils import threaded, synchronized_method
 from asgiref.sync import sync_to_async
@@ -225,7 +225,7 @@ class Tournament:
             winner = await self.get_user(winner['user_id'])
             loser = await self.get_user(loser['user_id'])
             notificationManager.add_notification(loser.id, 'You have lost the game, better luck next time', {"path": "/"}, 'redirection', False)
-            
+            notificationManager.add_notification(winner.id, 'You won! Wait for the next game!', {"path": "/"}, 'redirection', False)
             fixture['game_result'] = {
                 'player1': fixture['player1'],
                 'player2': fixture['player2'],
@@ -280,8 +280,27 @@ class Tournament:
             game_rooms['game_' + game_id]['game'] = self.fixtures[current_round][-1]['game']
             i += 2
         self.prepare_fixtures = False
-        await self.__redirect_players_to_games()
-        
+        if self.current_round == 0:
+            await self.__redirect_players_to_games()
+        else:
+            await self.__send_game_invite_messages()
+
+    async def __send_game_invite_messages(self):
+        from .consumers import notificationManager
+
+        for fixture in self.fixtures[self.current_round]:
+            for player in self.players:
+                if player == fixture['player1'].id:
+                    notificationManager.add_notification(fixture['player1'].id, 'Go next round!', {}, 'normal', False)
+                    await self.__claptrap_message(fixture['player1'].id, fixture['game_id'])
+                if player == fixture['player2'].id:
+                    notificationManager.add_notification(fixture['player2'].id, 'Go next round!', {}, 'normal', False)
+                    await self.__claptrap_message(fixture['player2'].id, fixture['game_id'])
+    
+    async def __claptrap_message(self, userId, gameId):
+        t = await self.save_message_claptrap(userId, "TEST", gameId)
+        print
+
     async def __redirect_players_to_games(self):
         for fixture in self.fixtures[self.current_round]:
             for player in self.players:
@@ -415,6 +434,21 @@ class Tournament:
         game_stats.stats = stats
         game_stats.save()
     
+    @sync_to_async
+    def save_message_claptrap(self, user_id, message, game_id):
+        # find the user and claptrap room and save the message (claptrap's id is 1)
+        bot = User.objects.get(id=1)
+        botrooms = ChatUsers.objects.filter(user=bot)
+        user = User.objects.get(id=user_id)
+        rooms = [i.room for i in botrooms]
+        chat_room = ChatUsers.objects.filter(user=user, room__in=rooms).first()
+        if chat_room is None:
+            return None
+        print(chat_room)
+        print(chat_room.room)
+        message_obj = ChatMessages.objects.create(room=chat_room.room, sender=bot, message="The next game is about to start, good luck!", type="match_invite", payload={"game_id": game_id})
+        return user, message_obj
+
 class TournamentManager:
     tournaments = {}
     started = False

@@ -434,7 +434,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         
         return friends
         
-    
 class TournamentConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user_data = checkAuthForWS(self.scope)

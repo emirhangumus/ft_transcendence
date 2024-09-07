@@ -1,6 +1,9 @@
 all: up
 
 up:
+	@mkdir -p /var/www/42ecole/data/
+	@mkdir -p /var/www/42ecole/data/backend
+	@mkdir -p /var/www/42ecole/data/pgadmin
 	docker compose up -d --build
 
 down:

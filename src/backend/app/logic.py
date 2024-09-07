@@ -211,18 +211,42 @@ class PongGame:
                 self.how_many_players = 0
 
 
+    # def move_ai(self):
+    #     paddle_speed = self.paddle_speed
+    #     if self.random_power_up == "powerup_slow_down_opponent" and self.is_in_range(threshold=900) and self.last_hitter == "player":
+    #         paddle_speed = 3
+    #     elif self.random_power_up == "powerup_revert_opponent_controls" and self.is_in_range() and self.last_hitter == "player":
+    #         paddle_speed = paddle_speed
+    #     elif self.random_power_up == "powerup_speed_up_yourself" and self.is_in_range() and self.last_hitter == "ai":
+    #         paddle_speed += 15
+    #     if self.ai_y + self.paddle_height / 2 < self.ball_y:
+    #         self.ai_y += paddle_speed
+    #     elif self.ai_y + self.paddle_height / 2 > self.ball_y:
+    #         self.ai_y -= paddle_speed
     def move_ai(self):
         paddle_speed = self.paddle_speed
-        if self.random_power_up == "powerup_slow_down_opponent" and self.is_in_range(threshold=900) and self.last_hitter == "player":
-            paddle_speed = 3
-        elif self.random_power_up == "powerup_revert_opponent_controls" and self.is_in_range() and self.last_hitter == "player":
-            paddle_speed = paddle_speed
-        elif self.random_power_up == "powerup_speed_up_yourself" and self.is_in_range() and self.last_hitter == "ai":
-            paddle_speed += 15
-        if self.ai_y + self.paddle_height / 2 < self.ball_y:
-            self.ai_y += paddle_speed
-        elif self.ai_y + self.paddle_height / 2 > self.ball_y:
-            self.ai_y -= paddle_speed
+
+        distance_to_ball = abs(self.ball_x - 20)  # 20, paddle'ın x koordinatı
+
+        max_divisions = 6
+        min_divisions = 3
+        divisions = max(min_divisions, min(max_divisions, int(self.width / (distance_to_ball + 1))))
+
+        region_height = self.height / divisions
+
+        ball_region = int(self.ball_y / region_height)
+
+        target_y = (ball_region * region_height) + random.randint(0, int(region_height - self.paddle_height))
+
+        if self.ai_y + self.paddle_height / 2 < target_y:
+            self.ai_y += paddle_speed / 2
+        elif self.ai_y + self.paddle_height / 2 > target_y:
+            self.ai_y -= paddle_speed / 2
+
+        if self.ai_y < 0:
+            self.ai_y = 0
+        elif self.ai_y > self.height - self.paddle_height:
+            self.ai_y = self.height - self.paddle_height
     
     # def ball_hit_place(self):
         # pass
@@ -305,7 +329,7 @@ class PongGame:
         time.sleep(1)
     
     def end_game(self):
-        if self.opp_score == 5 or self.player_score == 5:
+        if self.opp_score == 1 or self.player_score == 1:
             self.total_match_time = time.time() - self.start_time
             self.is_game_over = True
             
